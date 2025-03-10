@@ -7,6 +7,14 @@ from .models import Education
 from .serializers import EducationSerializer
 from .models import TalentRegistration
 from .serializers import TalentRegistrationSerializer
+from .models import WorkExperience
+from .serializers import WorkExperienceSerializer
+from .models import PortfolioReferences
+from .serializers import PortfolioReferencesSerializer
+from .models import PreferredWorkTerms
+from .serializers import PreferredWorkTermsSerializer
+from .models import LanguageProficiency
+from .serializers import LanguageProficiencySerializer
 
 
 class SkillsExpertiseCreateView(generics.CreateAPIView):
@@ -28,3 +36,21 @@ class EducationCreateView(generics.CreateAPIView):
 class TalentRegistrationCreateView(generics.CreateAPIView):
     queryset = TalentRegistration.objects.all()
     serializer_class = TalentRegistrationSerializer
+
+
+class WorkExperienceCreateView(generics.CreateAPIView):
+    queryset = WorkExperience.objects.all()
+    serializer_class = WorkExperienceSerializer
+
+class PortfolioReferencesCreateView(generics.CreateAPIView):
+    queryset = PortfolioReferences.objects.all()
+    serializer_class = PortfolioReferencesSerializer
+
+
+class PreferredWorkTermsCreateView(generics.CreateAPIView):
+    queryset = PreferredWorkTerms.objects.all()
+    serializer_class = PreferredWorkTermsSerializer
+
+class LanguageProficiencyCreateView(generics.CreateAPIView):
+    queryset = LanguageProficiency.objects.all()
+    serializer_class = LanguageProficiencySerializer

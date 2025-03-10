@@ -68,3 +68,60 @@ class Education(models.Model):
     def __str__(self):
         return f"{self.college_degree} in {self.field_of_study} from {self.university}"
 
+#Work Experience
+class WorkExperience(models.Model):
+    job_title = models.CharField(max_length=100, null=False)
+    company_industry = models.CharField(max_length=150, null=False)
+    start_date = models.DateField(null=False)
+    end_date = models.DateField(null=True, blank=True)  # Allow blank for ongoing jobs
+    responsibilities = models.TextField(null=True, blank=True)
+    technologies_used = models.CharField(max_length=200, null=True, blank=True)
+    projects = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.job_title} at {self.company_industry}"
+    
+#Portfolio and References
+class PortfolioReferences(models.Model):
+    resume = models.FileField(upload_to='resumes/', null=True, blank=True)
+    project_links = models.JSONField(default=list, blank=True)
+    references = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"Portfolio (Resume: {self.resume}, Projects: {len(self.project_links)}, References: {len(self.references)})"
+    
+#Preferred Work Terms
+class PreferredWorkTerms(models.Model):
+    WORK_TYPE_CHOICES = [
+        ('full_time', 'Full-Time'),
+        ('part_time', 'Part-Time'),
+        ('contract', 'Contract'),
+        ('freelance', 'Freelance'),
+        ('internship', 'Internship'),
+    ]
+
+    work_type = models.CharField(max_length=20, choices=WORK_TYPE_CHOICES)
+    availability = models.CharField(max_length=100, null=True, blank=True)
+    salary_expectation = models.CharField(max_length=50, null=True, blank=True)
+    additional_notes = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Work Type: {self.get_work_type_display()} | Salary: {self.salary_expectation}"
+    
+#Language Proficiency
+class LanguageProficiency(models.Model):
+    PROFICIENCY_LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('fluent', 'Fluent'),
+        ('native', 'Native'),
+    ]
+
+    language = models.CharField(max_length=50)
+    proficiency_level = models.CharField(max_length=20, choices=PROFICIENCY_LEVEL_CHOICES)
+    certification = models.CharField(max_length=100, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.language} ({self.get_proficiency_level_display()})"
+
