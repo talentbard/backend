@@ -146,8 +146,10 @@ class UserLoginView(APIView):
                         "email": openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
                         "role": openapi.Schema(type=openapi.TYPE_STRING, description="User role"),
                         "password": openapi.Schema(type=openapi.TYPE_STRING, description="User password"),
+                        "is_freelancer": openapi.Schema(type=openapi.TYPE_BOOLEAN, description="User type"),
+                        
                     },
-                    required=["email", "password"],
+                    required=["email", "password", "is_freelancer"],
                 ),
             },
             required=["payload"],  # Make `payload` required
@@ -173,6 +175,8 @@ class UserLoginView(APIView):
         email = payload.get('email')
         role = payload.get('role')
         password = payload.get('password')
+        is_freelancer = payload.get('is_freelancer')
+
 
         if not email or not password:
             return Response(
@@ -193,7 +197,7 @@ class UserLoginView(APIView):
                         "refresh_token": str(refresh),
                         "user_id": str(user.user_id)
                     }, status=status.HTTP_200_OK)
-
+                
                 return Response({"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
 
             except UserProfile.DoesNotExist:
