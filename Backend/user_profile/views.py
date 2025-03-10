@@ -41,11 +41,10 @@ class UserSignupView(APIView):
                         "email_id": openapi.Schema(type=openapi.TYPE_STRING, description="User email address"),
                         "phone_no": openapi.Schema(type=openapi.TYPE_STRING, description="Phone number (optional)"),
                         "role": openapi.Schema(type=openapi.TYPE_STRING, description="Role of the user"),
-                        "designation": openapi.Schema(type=openapi.TYPE_STRING, description="Role of the designation"),
                         "password": openapi.Schema(type=openapi.TYPE_STRING, description="Password for the account"),
                         "admin_key": openapi.Schema(type=openapi.TYPE_STRING, description="admin key")
                     },
-                    required=["full_name", "email_id", "password", "role", "designation","admin_key"],
+                    required=["full_name", "email_id", "password", "role","admin_key"],
                 ),
             },
             required=["payload"],  # `payload` is required
@@ -80,7 +79,6 @@ class UserSignupView(APIView):
         email_id = payload.get('email_id')
         phone_no = payload.get('phone_no')
         role = payload.get('role')
-        designation = payload.get('designation')
         password = payload.get('password')
         admin_key = payload.get('admin_key')
 
@@ -103,7 +101,6 @@ class UserSignupView(APIView):
                 "phone_no": phone_no,
                 "password": password,
                 "role": role,
-                "designation": designation
             }
         )
         if serializer.is_valid():

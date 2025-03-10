@@ -9,4 +9,8 @@ asgiref==3.7.2
 django-cors-headers==4.2.0
 bcrypt==4.0.1
 #psycopg2-binary==2.9.6
+<<<<<<< HEAD
 dotenv
+=======
+dotenv
+>>>>>>> 4d96efb4f42050ab50acf2b698dfae58b8c557c1
