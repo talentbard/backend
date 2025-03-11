@@ -68,16 +68,18 @@ class Education(models.Model):
 #Work Experience
 class WorkExperience(models.Model):
     job_title = models.CharField(max_length=100, null=False)
-    company_industry = models.CharField(max_length=150, null=False)
+    company = models.CharField(max_length=150, null=False)
+    industry = models.CharField(max_length=150, null=False)
     start_date = models.DateField(null=False)
     end_date = models.DateField(null=True, blank=True)  # Allow blank for ongoing jobs
     responsibilities = models.TextField(null=True, blank=True)
+    achievements = models.TextField(null=True, blank=True)
     technologies_used = models.CharField(max_length=200, null=True, blank=True)
     projects = models.TextField(null=True, blank=True)
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Linking to user
 
     def __str__(self):
-        return f"{self.job_title} at {self.company_industry}"
+        return f"{self.job_title} at {self.company}"
     
 #Portfolio and References
 class PortfolioReferences(models.Model):
