@@ -1,8 +1,8 @@
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, generics
-from .models import SkillsExpertise
-from .serializers import SkillsExpertiseSerializer
+from ..models import SkillsExpertise
+from ..serializers import SkillsExpertiseSerializer
 
 class SkillsExpertiseCreateView(generics.CreateAPIView):
     queryset = SkillsExpertise.objects.all()
