@@ -6,6 +6,7 @@ from .models import WorkExperience
 from .models import PortfolioReferences
 from .models import PreferredWorkTerms
 from .models import LanguageProficiency
+from .models import TalentRegistrationStatus
 
 
 class SkillsExpertiseSerializer(serializers.ModelSerializer):
@@ -41,4 +42,9 @@ class PreferredWorkTermsSerializer(serializers.ModelSerializer):
 class LanguageProficiencySerializer(serializers.ModelSerializer):
     class Meta:
         model = LanguageProficiency
+        fields = '__all__'
+
+class TalentRegistrationStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TalentRegistrationStatus
         fields = '__all__'

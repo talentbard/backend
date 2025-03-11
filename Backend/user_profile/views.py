@@ -14,7 +14,7 @@ from .serializers import (
 )
 from .decorators import authenticate_user_session
 from django.contrib.auth.hashers import make_password, check_password
-
+from talent.serializers import TalentRegistrationStatusSerializer
 HEADER_PARAMS = {
     'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
 }
@@ -113,6 +113,11 @@ class UserSignupView(APIView):
                 "phone_no": user.phone_no,
                 "added_date": user.added_date,
             }
+            serializer1=TalentRegistrationStatusSerializer(
+                data={
+                    "user_id": str(user.user_id)
+                }
+            )
 
             return Response(
                 {"message": "User registered successfully", "user_data": user_data},
@@ -172,7 +177,6 @@ class UserLoginView(APIView):
         email = payload.get('email')
         role = payload.get('role')
         password = payload.get('password')
-        is_freelancer = payload.get('is_freelancer')
 
 
         if not email or not password:

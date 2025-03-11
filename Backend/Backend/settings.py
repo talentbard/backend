@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',  # For Swagger
     'user_profile',   # Add your app name here
+    'talent'
 ]
 
 MIDDLEWARE = [

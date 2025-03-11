@@ -1,8 +1,15 @@
 import uuid
 from datetime import datetime
 from django.db import models
-from ..user_profile.models import UserProfile
+from user_profile.models import UserProfile
 
+class TalentRegistrationStatus(models.Model):
+    status_id = models.CharField(primary_key=True, default="0", max_length=100)
+    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.status_id
+    
 #TalentRegistration
 class TalentRegistration(models.Model):
     FREELANCER_STATUS_CHOICES = [
