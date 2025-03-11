@@ -1,11 +1,11 @@
 from django.urls import path
-from .views import SkillsExpertiseCreateView
-from .views import EducationCreateView
-from .views import TalentRegistrationCreateView
-from .views import WorkExperienceCreateView
-from .views import PortfolioReferencesCreateView
-from .views import PreferredWorkTermsCreateView
-from .views import LanguageProficiencyCreateView
+from .skills_views import SkillsExpertiseCreateView
+from .edu_views import EducationCreateView
+from .talent_views import TalentRegistrationCreateView
+from .work_views import WorkExperienceCreateView
+from .portfolio_views import PortfolioReferencesCreateView
+from .preffered_work_views import PreferredWorkTermsCreateView
+from .language_views import LanguageProficiencyCreateView
 
 urlpatterns = [
     path('skills-expertise/', SkillsExpertiseCreateView.as_view(), name='skills-expertise-create'),
