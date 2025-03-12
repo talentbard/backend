@@ -205,6 +205,19 @@ REST_FRAMEWORK = {
 
 
 # settings.py for drf-yasg Swagger UI
+SWAGGER_SETTINGS = {
+    'LOGIN_URL': 'rest_framework:login',
+    'LOGOUT_URL': 'rest_framework:logout',
+    'USE_SESSION_AUTH': False,  # Disable Django login requirement
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    }
+}
+
 from rest_framework_simplejwt.settings import api_settings
 
 api_settings.USER_ID_FIELD = "user_id"
