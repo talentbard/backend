@@ -207,13 +207,6 @@ REST_FRAMEWORK = {
 # settings.py for drf-yasg Swagger UI
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,  # Disable session authentication
-    'SECURITY_DEFINITIONS': {
-        'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header'
-        }
-    }
 }
 
 from rest_framework_simplejwt.settings import api_settings
