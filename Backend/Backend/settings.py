@@ -206,9 +206,7 @@ REST_FRAMEWORK = {
 
 # settings.py for drf-yasg Swagger UI
 SWAGGER_SETTINGS = {
-    'LOGIN_URL': 'rest_framework:login',
-    'LOGOUT_URL': 'rest_framework:logout',
-    'USE_SESSION_AUTH': False,  # Disable Django login requirement
+    'USE_SESSION_AUTH': False,  # Disable session authentication
     'SECURITY_DEFINITIONS': {
         'Bearer': {
             'type': 'apiKey',
