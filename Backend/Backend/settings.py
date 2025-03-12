@@ -209,13 +209,9 @@ SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,  # Disable session authentication
 }
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
 
-# Ensure Django finds your static files
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
 
 
 from rest_framework_simplejwt.settings import api_settings
