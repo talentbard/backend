@@ -9,16 +9,15 @@ from talent.models import PortfolioReferences, TalentRegistrationStatus
 from talent.serializers import PortfolioReferencesSerializer
 
 HEADER_PARAMS = {
-    'access_token': openapi.Parameter(
-        'accesstoken', openapi.IN_HEADER, description="JWT access token", type=openapi.TYPE_STRING
-    ),
+    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
 }
 
 class PortfolioReferencesCreateView(APIView):
-    parser_classes = (MultiPartParser, FormParser)  # Support file uploads
+    # parser_classes = (MultiPartParser, FormParser)  # Support file uploads
 
     @swagger_auto_schema(
         operation_description="Save user's portfolio and references.",
+        consumes=["application/json"],
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -93,7 +92,7 @@ class PortfolioReferencesCreateView(APIView):
         payload = request.data.get("payload", {})
         auth_params = request.data.get("auth_params", {})
 
-        resume = request.FILES.get("resume", None)  # Handle file uploads
+        resume = payload.get("resume",None)# Handle file uploads
         project_links = payload.get("project_links", [])
         references = payload.get("references", [])
         user_id = payload.get("user_id")
@@ -116,7 +115,7 @@ class PortfolioReferencesCreateView(APIView):
         if serializer.is_valid():
             portfolio = serializer.save()
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.status_id = "7"  
+            talent_status.talent_status = "7"  
             talent_status.save()
 
             user_data = {

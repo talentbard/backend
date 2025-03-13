@@ -17,6 +17,7 @@ from talent.serializers import EducationSerializer
 class EducationCreateView(APIView):
     @swagger_auto_schema(
         operation_description="Save the user's education information using `auth_params`.",
+        consumes=["application/json"],
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -32,7 +33,7 @@ class EducationCreateView(APIView):
                 ),
                 "payload": openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    description="Refresh token details",
+                    description="User Education details",
                     properties={
                         "university_name": openapi.Schema(type=openapi.TYPE_STRING, description="University Name"),
                         "college_degree": openapi.Schema(type=openapi.TYPE_STRING, description="College Degree"),
@@ -96,7 +97,7 @@ class EducationCreateView(APIView):
     @authenticate_user_session
     def post(self, request):
         payload = request.data.get('payload', {})
-        university_name = payload.get('unversity_name')
+        university_name = payload.get('university_name')
         college_degree = payload.get('college_degree')
         field_of_study = payload.get('field_of_study')
         graduation_date = payload.get('graduation_date')
@@ -113,7 +114,7 @@ class EducationCreateView(APIView):
 
         serializer = EducationSerializer(
             data={
-                "university_name": university_name,
+                "university": university_name,
                 "college_degree": college_degree,
                 "field_of_study": field_of_study,
                 "graduation_date": graduation_date,
@@ -126,8 +127,8 @@ class EducationCreateView(APIView):
             user = serializer.save()
             # Retrieve the object by user_id
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            # Update status_id
-            talent_status.status_id = "3"
+            # Update talent_status
+            talent_status.talent_status = "3"
             # Save the changes
             talent_status.save()
             user_data = {

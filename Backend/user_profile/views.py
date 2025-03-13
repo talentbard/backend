@@ -12,6 +12,7 @@ from .serializers import (
     UserProfileSerializer,
     TokenRefreshSerializer
 )
+from talent.serializers import TalentRegistrationStatusSerializer
 from .decorators import authenticate_user_session
 from django.contrib.auth.hashers import make_password, check_password
 from talent.serializers import TalentRegistrationStatusSerializer
@@ -105,6 +106,14 @@ class UserSignupView(APIView):
         )
         if serializer.is_valid():
             user = serializer.save(password=make_password(serializer.validated_data['password']))
+            serializer_status = TalentRegistrationStatusSerializer(
+                data={
+                    "user_id": user.user_id
+                }
+            )
+
+            if serializer_status.is_valid():
+                serializer_status.save()
 
             user_data = {
                 "user_id": str(user.user_id),

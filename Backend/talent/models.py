@@ -5,6 +5,7 @@ from user_profile.models import UserProfile
 
 class TalentRegistrationStatus(models.Model):
     status_id = models.CharField(primary_key=True, default="0", max_length=100)
+    talent_status = models.CharField(default="0", max_length=100)
     user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -52,7 +53,7 @@ class SkillsExpertise(models.Model):
     skill_level = models.CharField(max_length=20, choices=SKILL_LEVEL_CHOICES, default='beginner')
     experience_years = models.PositiveIntegerField(null=True, blank=True)  # Years of experience
     secondary_skills = models.CharField(max_length=255, null=True, blank=True)  # Comma-separated skills
-    certificate_image = models.ImageField(upload_to='certifications/', null=True, blank=True)  # Changed upload path
+    certificate_image = models.TextField(null=True, blank=True)
     user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -134,3 +135,32 @@ class LanguageProficiency(models.Model):
 
     def __str__(self):
         return f"{self.language} ({self.get_proficiency_level_display()})"
+    
+#Job Preference
+class JobPreferences(models.Model):
+    JOB_TYPE_CHOICES = [
+        ('full_time', 'Full-Time'),
+        ('part_time', 'Part-Time'),
+        ('contract', 'Contract'),
+        ('freelance', 'Freelance'),
+        ('internship', 'Internship'),
+    ]
+
+    INDUSTRY_CHOICES = [
+        ('it_software', 'IT & Software'),
+        ('finance', 'Finance'),
+        ('healthcare', 'Healthcare'),
+        ('education', 'Education'),
+        ('marketing', 'Marketing'),
+        ('other', 'Other'),
+    ]
+
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
+    job_title = models.CharField(max_length=100, null=False)
+    preferred_job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, null=False)
+    industry = models.CharField(max_length=50, choices=INDUSTRY_CHOICES, null=False)
+    desired_role = models.CharField(max_length=100, null=True, blank=True)
+    career_objective = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.job_title} - {self.user}"

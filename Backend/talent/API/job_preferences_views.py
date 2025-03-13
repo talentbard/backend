@@ -7,16 +7,18 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from django.contrib.auth.hashers import make_password, check_password
+from talent.models import JobPreferences
+from talent.serializers import JobPreferencesSerializer
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
 }
-from talent.models import LanguageProficiency,TalentRegistrationStatus
-from talent.serializers import LanguageProficiencySerializer
+from talent.models import Education,TalentRegistrationStatus
+from talent.serializers import EducationSerializer
 
-class LanguageProficiencyCreateView(APIView):
+class JobPreferencesCreateView(APIView):
     @swagger_auto_schema(
-        operation_description="Save the user's language proficiency information.",
+        operation_description="Save the user's job preferences using `auth_params`.",
         consumes=["application/json"],
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
@@ -24,26 +26,25 @@ class LanguageProficiencyCreateView(APIView):
             properties={
                 "auth_params": openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    description="Authentication parameters",
+                    description="Authentication-related parameters",
                     properties={
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                         "refresh_token": openapi.Schema(type=openapi.TYPE_STRING, description="Refresh token"),
                     },
-                    required=["user_id","refresh_token"],
+                    required=["user_id", "refresh_token"],
                 ),
                 "payload": openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    description="Language proficiency details",
+                    description="User job preferences details",
                     properties={
-                        "language": openapi.Schema(type=openapi.TYPE_STRING, description="Language Name"),
-                        "proficiency_level": openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description="Proficiency Level (beginner, intermediate, advanced, fluent, native)"
-                        ),
-                        "certification": openapi.Schema(type=openapi.TYPE_STRING, description="Certification (optional)", nullable=True),
+                        "job_title": openapi.Schema(type=openapi.TYPE_STRING, description="Job Title"),
+                        "preferred_job_type": openapi.Schema(type=openapi.TYPE_STRING, description="Preferred Job Type"),
+                        "industry": openapi.Schema(type=openapi.TYPE_STRING, description="Industry"),
+                        "desired_role": openapi.Schema(type=openapi.TYPE_STRING, description="Desired Role"),
+                        "career_objective": openapi.Schema(type=openapi.TYPE_STRING, description="Career Objective"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
-                    required=["language", "proficiency_level", "user_id"],
+                    required=["job_title", "preferred_job_type", "industry", "user_id"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -54,9 +55,11 @@ class LanguageProficiencyCreateView(APIView):
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        "language": openapi.Schema(type=openapi.TYPE_STRING, description="Language Name"),
-                        "proficiency_level": openapi.Schema(type=openapi.TYPE_STRING, description="Proficiency Level"),
-                        "certification": openapi.Schema(type=openapi.TYPE_STRING, description="Certification"),
+                        "job_title": openapi.Schema(type=openapi.TYPE_STRING, description="Job Title"),
+                        "preferred_job_type": openapi.Schema(type=openapi.TYPE_STRING, description="Preferred Job Type"),
+                        "industry": openapi.Schema(type=openapi.TYPE_STRING, description="Industry"),
+                        "desired_role": openapi.Schema(type=openapi.TYPE_STRING, description="Desired Role"),
+                        "career_objective": openapi.Schema(type=openapi.TYPE_STRING, description="Career Objective"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
                 ),
@@ -92,43 +95,50 @@ class LanguageProficiencyCreateView(APIView):
     )
     @authenticate_user_session
     def post(self, request):
-        payload = request.data.get("payload", {})
-        auth_params = request.data.get("auth_params", {})
+        payload = request.data.get('payload', {})
+        job_title = payload.get('job_title')
+        preferred_job_type = payload.get('preferred_job_type')
+        industry = payload.get('industry')
+        desired_role = payload.get('desired_role')
+        career_objective = payload.get('career_objective')
+        user_id = payload.get('user_id')
 
-        language = payload.get("language")
-        proficiency_level = payload.get("proficiency_level")
-        certification = payload.get("certification", None)
-        user_id = payload.get("user_id")
-
-        if not language or not proficiency_level or not user_id:
+        if not job_title or not preferred_job_type or not industry:
             return Response(
-                {"error": "Language, proficiency level, and user ID are required."},
+                {"error": "Job title, preferred job type, and industry are required in the payload."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = LanguageProficiencySerializer(
+        serializer = JobPreferencesSerializer(
             data={
-                "language": language,
-                "proficiency_level": proficiency_level,
-                "certification": certification,
+                "job_title": job_title,
+                "preferred_job_type": preferred_job_type,
+                "industry": industry,
+                "desired_role": desired_role,
+                "career_objective": career_objective,
                 "user_id": user_id,
             }
         )
-
         if serializer.is_valid():
-            user_language = serializer.save()
+            job_preference = serializer.save()
+            user = serializer.save()
+            # Retrieve the object by user_id
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "5"  # Assuming "5" is the updated status for language proficiency completion
+            # Update talent_status
+            talent_status.talent_status = "8"
+            # Save the changes
             talent_status.save()
             user_data = {
-                    "language": user_language.language,
-                    "proficiency_level": user_language.proficiency_level,
-                    "certification": user_language.certification,
-                    "user_id": str(user_language.user_id),
-                }
+                "user_id": str(job_preference.user_id),
+                "job_title": job_preference.job_title,
+                "preferred_job_type": job_preference.preferred_job_type,
+                "industry": job_preference.industry,
+                "desired_role": job_preference.desired_role,
+                "career_objective": job_preference.career_objective,
+            }
 
             return Response(
-                {"message": "Language proficiency added successfully", "user_data": user_data},
+                {"message": "Job Preferences saved successfully", "user_data": user_data},
                 status=status.HTTP_201_CREATED,
             )
 

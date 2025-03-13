@@ -8,14 +8,13 @@ from talent.models import WorkExperience, TalentRegistrationStatus
 from talent.serializers import WorkExperienceSerializer
 
 HEADER_PARAMS = {
-    'access_token': openapi.Parameter(
-        'accesstoken', openapi.IN_HEADER, description="JWT access token", type=openapi.TYPE_STRING
-    ),
+    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
 }
 
 class WorkExperienceCreateView(APIView):
     @swagger_auto_schema(
         operation_description="Add work experience for a user.",
+        consumes=["application/json"],
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -131,7 +130,7 @@ class WorkExperienceCreateView(APIView):
             work_experience = serializer.save()
             # Update Talent Registration Status
             talent_status = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-            talent_status.status_id = "4"
+            talent_status.talent_status = "4"
             talent_status.save()
 
             user_data = {

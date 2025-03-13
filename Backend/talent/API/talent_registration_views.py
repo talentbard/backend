@@ -8,14 +8,13 @@ from talent.models import TalentRegistration, TalentRegistrationStatus
 from talent.serializers import TalentRegistrationSerializer
 
 HEADER_PARAMS = {
-    'access_token': openapi.Parameter(
-        'accesstoken', openapi.IN_HEADER, description="JWT access token", type=openapi.TYPE_STRING
-    ),
+    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
 }
 
 class TalentRegistrationCreateView(APIView):
     @swagger_auto_schema(
         operation_description="Register a new talent profile.",
+        consumes=["application/json"],
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -133,7 +132,7 @@ class TalentRegistrationCreateView(APIView):
             talent_registration = serializer.save()
             # Update Talent Registration Status
             talent_status = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-            talent_status.status_id = "1"
+            talent_status.talent_status = "1"
             talent_status.save()
             
             user_data = {
