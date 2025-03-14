@@ -5,6 +5,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from talent.models import TalentRegistrationStatus
+from talent.serializers import TalentRegistrationStatusSerializer
 from user_profile.models import UserProfile
 
 HEADER_PARAMS = {
@@ -84,10 +85,12 @@ class TalentRegistrationStatusView(APIView):
         
         status_talent = TalentRegistrationStatus.objects.filter(user_id=user_id)
 
+        serialized_data = TalentRegistrationStatusSerializer(status_talent, many=True).data
+
         
 
         return Response(
-            {"message": "Talent registration successful", "status": status_talent},
+            {"message": "Talent registration successful", "payload":serialized_data, status: 200},
             status=status.HTTP_201_CREATED,
         )
 
