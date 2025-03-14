@@ -90,8 +90,9 @@ class TalentRegistrationStatusView(APIView):
         
 
         return Response(
-            {"message": "Talent registration successful", "payload":serialized_data, status: 200},
-            status=status.HTTP_201_CREATED,
-        )
+    {"message": "Talent registration successful", "payload": serialized_data, "status": 200},
+    status=status.HTTP_200_OK,
+)
+
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
