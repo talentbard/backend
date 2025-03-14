@@ -90,7 +90,7 @@ class TalentRegistrationStatusView(APIView):
         
 
         return Response(
-            {"message": "Talent registration successful", "status": serialized_data},
+            {"message": "Talent registration successful", "payload":serialized_data, status: 200},
             status=status.HTTP_201_CREATED,
         )
 
