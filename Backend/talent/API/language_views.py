@@ -105,20 +105,21 @@ class LanguageProficiencyCreateView(APIView):
                 {"error": "Language, proficiency level, and user ID are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = LanguageProficiencySerializer(
             data={
                 "language": language,
                 "proficiency_level": proficiency_level,
                 "certification": certification,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
 
         if serializer.is_valid():
             user_language = serializer.save()
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "5"  # Assuming "5" is the updated status for language proficiency completion
+            talent_status.talent_status = "7"
             talent_status.save()
             user_data = {
                     "language": user_language.language,

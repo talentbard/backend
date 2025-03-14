@@ -111,6 +111,7 @@ class EducationCreateView(APIView):
                 {"error": "University name, college degree, feild of study, graduation date and gpa are required in the payload."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = EducationSerializer(
             data={
@@ -120,7 +121,7 @@ class EducationCreateView(APIView):
                 "graduation_date": graduation_date,
                 "currently_pursuing": currently_pursuing,
                 "gpa": gpa,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
         if serializer.is_valid():

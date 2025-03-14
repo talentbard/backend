@@ -108,6 +108,7 @@ class JobPreferencesCreateView(APIView):
                 {"error": "Job title, preferred job type, and industry are required in the payload."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = JobPreferencesSerializer(
             data={
@@ -116,7 +117,7 @@ class JobPreferencesCreateView(APIView):
                 "industry": industry,
                 "desired_role": desired_role,
                 "career_objective": career_objective,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
         if serializer.is_valid():

@@ -136,7 +136,7 @@ class TalentRegistrationCreateView(APIView):
             talent_registration = serializer.save()
             # Update Talent Registration Status
             talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-            talent_status.status_id = "1"  # Assuming "1" is the initial status for talent registration
+            talent_status.status_id = "1" 
             talent_status.save()
 
             user_data = {

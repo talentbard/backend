@@ -33,8 +33,8 @@ class TalentRegistration(models.Model):
     linkedin = models.URLField(max_length=200, null=True, blank=True)  # Changed linkdin -> linkedin, made optional
     current_location = models.CharField(max_length=100, null=True, blank=True)
     preferred_location = models.CharField(max_length=100, null=True, blank=True)
-    freelancer_status = models.CharField(max_length=20, choices=FREELANCER_STATUS_CHOICES, null=False, default="full_time")
-    availability = models.CharField(max_length=20, choices=AVAILABILITY_CHOICES, null=False, default="full_time")
+    freelancer_status = models.CharField(max_length=20, null=False, default="full_time")
+    availability = models.CharField(max_length=20, null=False, default="full_time")
     user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -108,7 +108,7 @@ class PreferredWorkTerms(models.Model):
         ('internship', 'Internship'),
     ]
 
-    work_type = models.CharField(max_length=20, choices=WORK_TYPE_CHOICES)
+    work_type = models.CharField(max_length=20,null = False)
     availability = models.CharField(max_length=100, null=True, blank=True)
     salary_expectation = models.CharField(max_length=50, null=True, blank=True)
     additional_notes = models.TextField(null=True, blank=True)
@@ -128,7 +128,7 @@ class LanguageProficiency(models.Model):
     ]
 
     language = models.CharField(max_length=50)
-    proficiency_level = models.CharField(max_length=20, choices=PROFICIENCY_LEVEL_CHOICES)
+    proficiency_level = models.CharField(max_length=20, null = False)
     certification = models.CharField(max_length=100, null=True, blank=True)
     user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
 
@@ -156,8 +156,8 @@ class JobPreferences(models.Model):
 
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
     job_title = models.CharField(max_length=100, null=False)
-    preferred_job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, null=False)
-    industry = models.CharField(max_length=50, choices=INDUSTRY_CHOICES, null=False)
+    preferred_job_type = models.CharField(max_length=20,null=False)
+    industry = models.CharField(max_length=50, null=False)
     desired_role = models.CharField(max_length=100, null=True, blank=True)
     career_objective = models.TextField(null=True, blank=True)
 

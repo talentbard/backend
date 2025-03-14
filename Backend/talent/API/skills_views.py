@@ -102,6 +102,7 @@ class SkillsExpertiseCreateView(APIView):
                 {"error": "User ID, Primary Skill, and Skill Level are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = SkillsExpertiseSerializer(
             data={
@@ -110,7 +111,7 @@ class SkillsExpertiseCreateView(APIView):
                 "experience_years": experience_years,
                 "secondary_skills": secondary_skills,
                 "certificate_image": certificate_image,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
 
@@ -118,7 +119,7 @@ class SkillsExpertiseCreateView(APIView):
             skills_expertise = serializer.save()
             # Update Talent Registration Status
             talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-            talent_status.status_id = "6"  # Assuming "6" is the status for skills & expertise update
+            talent_status.status_id = "2" 
             talent_status.save()
 
             user_data = {

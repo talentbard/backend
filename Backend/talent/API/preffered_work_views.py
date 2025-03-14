@@ -113,6 +113,7 @@ class PreferredWorkTermsCreateView(APIView):
                 {"error": "User ID and Work Type are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = PreferredWorkTermsSerializer(
             data={
@@ -120,7 +121,7 @@ class PreferredWorkTermsCreateView(APIView):
                 "availability": availability,
                 "salary_expectation": salary_expectation,
                 "additional_notes": additional_notes,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
 

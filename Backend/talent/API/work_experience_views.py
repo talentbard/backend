@@ -111,6 +111,7 @@ class WorkExperienceCreateView(APIView):
                 {"error": "User ID, Job Title, Company, Industry, Start Date, Responsibilities, Achievements, Technologies used, Projects are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = WorkExperienceSerializer(
             data={
@@ -123,7 +124,7 @@ class WorkExperienceCreateView(APIView):
                 "achievements": achievements,
                 "technologies_used": technologies_used,
                 "projects": projects,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
 

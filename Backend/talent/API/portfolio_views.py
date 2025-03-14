@@ -102,20 +102,21 @@ class PortfolioReferencesCreateView(APIView):
                 {"error": "User ID is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        user = UserProfile.objects.get(user_id=user_id)
 
         serializer = PortfolioReferencesSerializer(
             data={
                 "resume": resume,
                 "project_links": project_links,
                 "references": references,
-                "user_id": user_id,
+                "user_id": user.user_id,
             }
         )
 
         if serializer.is_valid():
             portfolio = serializer.save()
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "7"  
+            talent_status.talent_status = "5"  
             talent_status.save()
 
             user_data = {
