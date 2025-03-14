@@ -82,7 +82,7 @@ class TalentRegistrationStatusView(APIView):
         user_id = payload.get("user_id")
 
         
-        status = TalentRegistrationStatus.objects.get(user_id=user_id).values()
+        status = TalentRegistrationStatus.objects.filter(user_id=user_id)
 
         
 
