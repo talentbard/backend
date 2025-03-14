@@ -6,6 +6,7 @@ from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from talent.models import PreferredWorkTerms, TalentRegistrationStatus
 from talent.serializers import PreferredWorkTermsSerializer
+from user_profile.models import UserProfile
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),

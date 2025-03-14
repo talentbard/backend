@@ -7,6 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from django.contrib.auth.hashers import make_password, check_password
+from user_profile.models import UserProfile
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
