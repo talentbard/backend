@@ -7,6 +7,7 @@ from .API.job_preferences_views import JobPreferencesCreateView
 from .API.preffered_work_views import PreferredWorkTermsCreateView
 from .API.portfolio_views import PortfolioReferencesCreateView
 from .API.language_views import LanguageProficiencyCreateView
+from .API.talent_registration_status import TalentRegistrationStatusView
 
 urlpatterns = [
     path('register/', TalentRegistrationCreateView.as_view(), name='talent_register'),
@@ -17,4 +18,6 @@ urlpatterns = [
     path('work-terms/', PreferredWorkTermsCreateView.as_view(), name='preferred_work_terms'),
     path('portfolio/', PortfolioReferencesCreateView.as_view(), name='portfolio_references'),
     path('languages/', LanguageProficiencyCreateView.as_view(), name='language_proficiency'),
+    path('talent_registration_status/', TalentRegistrationStatusView.as_view(), name='talent_registration_status'),
+
 ]
