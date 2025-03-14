@@ -82,12 +82,12 @@ class TalentRegistrationStatusView(APIView):
         user_id = payload.get("user_id")
 
         
-        status = TalentRegistrationStatus.objects.filter(user_id=user_id)
+        status_talent = TalentRegistrationStatus.objects.filter(user_id=user_id)
 
         
 
         return Response(
-            {"message": "Talent registration successful", "status": status},
+            {"message": "Talent registration successful", "status": status_talent},
             status=status.HTTP_201_CREATED,
         )
 
