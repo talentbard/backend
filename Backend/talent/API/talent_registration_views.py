@@ -99,7 +99,7 @@ class TalentRegistrationCreateView(APIView):
     @authenticate_user_session
     def post(self, request):
         payload = request.data.get("payload", {})
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
 
         full_name = payload.get("full_name")
         email_id = payload.get("email_id")
@@ -128,7 +128,7 @@ class TalentRegistrationCreateView(APIView):
                 "preferred_location": preferred_location,
                 "freelancer_status": freelancer_status,
                 "availability": availability,
-                "user_id": user,
+                "user_id": user.user_id,
             }
         )
 
