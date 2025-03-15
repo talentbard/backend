@@ -37,6 +37,7 @@ urlpatterns = [
     # Application URLs
     path('user/', include('user_profile.urls')),
     path('talent/', include('talent.urls')),
+    path('company/', include('company.urls')),
 
     # Swagger UI and Redoc URLs
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger-ui'),
