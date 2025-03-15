@@ -97,6 +97,7 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
     "Accesstoken"
     "access_token"
+    "accesstoken"
 ]
 
 
