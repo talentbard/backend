@@ -225,3 +225,6 @@ STATIC_URL = "/static/"
 from rest_framework_simplejwt.settings import api_settings
 
 api_settings.USER_ID_FIELD = "user_id"
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False  # Disable forced HTTPS redirection in Django (Nginx handles it)
