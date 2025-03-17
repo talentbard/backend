@@ -125,7 +125,6 @@ class LanguageProficiencyCreateView(APIView):
                     "language": user_language.language,
                     "proficiency_level": user_language.proficiency_level,
                     "certification": user_language.certification,
-                    "user_id": str(user_language.user_id),
                 }
 
             return Response(
