@@ -136,7 +136,6 @@ class PreferredWorkTermsCreateView(APIView):
                 "availability": work_terms.availability,
                 "salary_expectation": work_terms.salary_expectation,
                 "additional_notes": work_terms.additional_notes,
-                "user_id": str(work_terms.user_id),
             }
 
             return Response(
