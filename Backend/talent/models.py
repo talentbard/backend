@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from django.db import models
 from user_profile.models import UserProfile
+from django.contrib.postgres.fields import ArrayField
 
 class TalentRegistrationStatus(models.Model):
     status_id = models.CharField(default="0", max_length=100)
@@ -48,11 +49,9 @@ class SkillsExpertise(models.Model):
         ('expert', 'Expert'),
     ]
 
-    primary_skill = models.CharField(max_length=100, null=False)  
-    skill_level = models.CharField(max_length=20, choices=SKILL_LEVEL_CHOICES, default='beginner')
-    experience_years = models.PositiveIntegerField(null=True, blank=True)  # Years of experience
-    secondary_skills = models.CharField(max_length=255, null=True, blank=True)  # Comma-separated skills
-    certificate_image = models.TextField(null=True, blank=True)
+    primary_skills = models.JSONField(default=list)
+    secondary_skills = models.JSONField(default=list, blank=True, null=True)  # Comma-separated skills
+    certificate_images = models.JSONField(default=list, blank=True, null=True)
     user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
@@ -83,14 +82,14 @@ class WorkExperience(models.Model):
     achievements = models.TextField(null=True, blank=True)
     technologies_used = models.CharField(max_length=200, null=True, blank=True)
     projects = models.TextField(null=True, blank=True)
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Linking to user
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Linking to user
 
     def __str__(self):
         return f"{self.job_title} at {self.company}"
     
 #Portfolio and References
 class PortfolioReferences(models.Model):
-    resume = models.FileField(upload_to='resumes/', null=True, blank=True)
+    resume = models.TextField(null=True, blank=True)
     project_links = models.JSONField(default=list, blank=True)
     references = models.JSONField(default=list, blank=True)
     user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)

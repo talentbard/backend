@@ -34,17 +34,38 @@ class SkillsExpertiseCreateView(APIView):
                     type=openapi.TYPE_OBJECT,
                     description="Skills and expertise details",
                     properties={
-                        "primary_skill": openapi.Schema(type=openapi.TYPE_STRING, description="Primary skill"),
-                        "skill_level": openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description="Skill level (beginner, intermediate, expert)",
+                        "primary_skills": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "skill_name": openapi.Schema(type=openapi.TYPE_STRING, description="Primary skill name"),
+                                    "skill_level": openapi.Schema(type=openapi.TYPE_STRING, description="Skill level"),
+                                    "experience_years": openapi.Schema(type=openapi.TYPE_INTEGER, description="Years of experience"),
+                                },
+                            ),
+                            description="List of primary skills with name, level, and experience",
                         ),
-                        "experience_years": openapi.Schema(type=openapi.TYPE_INTEGER, description="Years of experience"),
-                        "secondary_skills": openapi.Schema(type=openapi.TYPE_STRING, description="Secondary skills"),
-                        "certificate_image": openapi.Schema(type=openapi.TYPE_STRING, format="binary", description="Certificate image"),
+                        "secondary_skills": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "skill_name": openapi.Schema(type=openapi.TYPE_STRING, description="Secondary skill name"),
+                                    "skill_level": openapi.Schema(type=openapi.TYPE_STRING, description="Skill level"),
+                                    "experience_years": openapi.Schema(type=openapi.TYPE_INTEGER, description="Years of experience"),
+                                },
+                            ),
+                            description="List of secondary skills with name, level, and experience",
+                        ),
+                        "certificate_images": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(type=openapi.TYPE_STRING, format="binary"),
+                            description="List of uploaded certificate files",
+                        ),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
-                    required=["user_id", "primary_skill", "skill_level"],
+                    required=["user_id", "primary_skills"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -55,11 +76,18 @@ class SkillsExpertiseCreateView(APIView):
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        "primary_skill": openapi.Schema(type=openapi.TYPE_STRING, description="Primary skill"),
-                        "skill_level": openapi.Schema(type=openapi.TYPE_STRING, description="Skill level"),
-                        "experience_years": openapi.Schema(type=openapi.TYPE_INTEGER, description="Years of experience"),
-                        "secondary_skills": openapi.Schema(type=openapi.TYPE_STRING, description="Secondary skills"),
-                        "certificate_image": openapi.Schema(type=openapi.TYPE_STRING, description="Certificate image URL"),
+                        "primary_skills": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(type=openapi.TYPE_OBJECT),
+                        ),
+                        "secondary_skills": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(type=openapi.TYPE_OBJECT),
+                        ),
+                        "certificate_images": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(type=openapi.TYPE_STRING),
+                        ),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
                 ),
@@ -68,68 +96,67 @@ class SkillsExpertiseCreateView(APIView):
                 "Bad Request",
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    properties={"error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message")},
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
                 ),
             ),
             404: openapi.Response(
                 "User Not Found",
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    properties={"error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message")},
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
                 ),
             ),
             401: openapi.Response(
                 "Unauthorized",
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    properties={"error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message")},
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
                 ),
             ),
         },
     )
+
     @authenticate_user_session
     def post(self, request):
         payload = request.data.get("payload", {})
-
-        primary_skill = payload.get("primary_skill")
-        skill_level = payload.get("skill_level")
-        experience_years = payload.get("experience_years")
-        secondary_skills = payload.get("secondary_skills")
-        certificate_image = request.FILES.get("certificate_image")  # Handling file upload
+        
+        primary_skills = payload.get("primary_skills", [])
+        secondary_skills = payload.get("secondary_skills", [])
+        certificate_images = payload.get("certificates", [])
         user_id = payload.get("user_id")
 
-        if not primary_skill or not skill_level or not user_id:
+        if not primary_skills or not user_id :
             return Response(
-                {"error": "User ID, Primary Skill, and Skill Level are required."},
+                {"error": "User ID and Primary Skills are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
         user = UserProfile.objects.get(user_id=user_id)
-
-        serializer = SkillsExpertiseSerializer(
+        
+        skills_expertise = SkillsExpertiseSerializer(
             data={
-                "primary_skill": primary_skill,
-                "skill_level": skill_level,
-                "experience_years": experience_years,
-                "secondary_skills": secondary_skills,
-                "certificate_image": certificate_image,
+                "primary_skills":primary_skills,
+                "secondary_skills":secondary_skills,
+                "certificate_images":certificate_images,
                 "user_id": user.user_id,
             }
         )
-
-        if serializer.is_valid():
-            skills_expertise = serializer.save()
-            # Update Talent Registration Status
+        if skills_expertise.is_valid():
             talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-            talent_status.status_id = "2" 
+            talent_status.status_id = "2"
             talent_status.save()
 
             user_data = {
-                "primary_skill": skills_expertise.primary_skill,
-                "skill_level": skills_expertise.skill_level,
-                "experience_years": skills_expertise.experience_years,
-                "secondary_skills": skills_expertise.secondary_skills,
-                "certificate_image": skills_expertise.certificate_image.url if skills_expertise.certificate_image else None,
-                "user_id": str(skills_expertise.user_id),
+                "primary_skills": skills_expertise.validated_data.get("primary_skills"),
+                "secondary_skills": skills_expertise.validated_data.get("secondary_skills"),
+                "certificate_images": skills_expertise.validated_data.get("certificate_images"),
+                "user_id": str(user_id),
             }
 
             return Response(
@@ -137,4 +164,4 @@ class SkillsExpertiseCreateView(APIView):
                 status=status.HTTP_201_CREATED,
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(skills_expertise.errors, status=status.HTTP_400_BAD_REQUEST)
