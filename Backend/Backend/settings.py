@@ -39,7 +39,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-b=#^(y03*4+69fvmg*3hc%0bf*6pvts7)gd)v7wsa3&*c#-7no'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['13.201.78.9', 'localhost', '127.0.0.1','backend.talentbard.com']
 
