@@ -130,7 +130,6 @@ class JobPreferencesCreateView(APIView):
             # Save the changes
             talent_status.save()
             user_data = {
-                "user_id": str(job_preference.user_id),
                 "job_title": job_preference.job_title,
                 "preferred_job_type": job_preference.preferred_job_type,
                 "industry": job_preference.industry,

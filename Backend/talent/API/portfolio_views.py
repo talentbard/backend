@@ -123,7 +123,6 @@ class PortfolioReferencesCreateView(APIView):
                 "resume": portfolio.resume.url if portfolio.resume else None,
                 "project_links": portfolio.project_links,
                 "references": portfolio.references,
-                "user_id": str(portfolio.user_id),
             }
 
             return Response(
