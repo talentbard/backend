@@ -6,6 +6,7 @@ from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from company.models import CompanyRegistration
 from company.serializers import CompanyRegistrationSerializer
+from talent.models import TalentRegistrationStatus
 from user_profile.models import UserProfile
 
 HEADER_PARAMS = {
@@ -51,7 +52,7 @@ class CompanyRegistrationCreateView(APIView):
                         "primary_business_model": openapi.Schema(type=openapi.TYPE_STRING, description="Primary business model"),
                         "funding_raised": openapi.Schema(type=openapi.TYPE_STRING, description="Funding raised (yes/no)"),
                         "funding_rounds": openapi.Schema(type=openapi.TYPE_INTEGER, description="Funding rounds"),
-                        "latest_rounds": openapi.Schema(type=openapi.TYPE_INTEGER, description="Latest funding rounds"),
+                        "latest_rounds": openapi.Schema(type=openapi.TYPE_STRING, description="Latest funding rounds"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
                     required=["company_name", "company_phone", "about_company", "designation", "personal_contact", "company_work_email", "company_size", "industry", "sector", "primary_business_model", "user_id"],
@@ -119,11 +120,17 @@ class CompanyRegistrationCreateView(APIView):
                 "funding_rounds": funding_rounds,
                 "latest_rounds": latest_rounds,
                 "user_id": user.user_id,
+
             }
         )
 
         if serializer.is_valid():
             company = serializer.save()
+            talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
+            # Update talent_status
+            talent_status.talent_status = "1"
+            # Save the changes
+            talent_status.save()
             return Response(
                 {"message": "Company registered successfully", "company_data": serializer.data},
                 status=status.HTTP_201_CREATED,
