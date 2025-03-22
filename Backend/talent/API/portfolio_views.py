@@ -35,7 +35,7 @@ class PortfolioReferencesCreateView(APIView):
                     type=openapi.TYPE_OBJECT,
                     description="Portfolio details",
                     properties={
-                        "resume": openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_BINARY, description="Resume file (optional)"),
+                        "resume": openapi.Schema(type=openapi.TYPE_STRING, description="Resume file (optional)"),
                         "project_links": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING), description="List of project links"),
                         "references": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING), description="List of references"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
@@ -92,7 +92,7 @@ class PortfolioReferencesCreateView(APIView):
         payload = request.data.get("payload", {})
         auth_params = request.data.get("auth_params", {})
 
-        resume = payload.get("resume",None)# Handle file uploads
+        resume = payload.get("resume")# Handle file uploads
         project_links = payload.get("project_links", [])
         references = payload.get("references", [])
         user_id = payload.get("user_id")
@@ -120,7 +120,6 @@ class PortfolioReferencesCreateView(APIView):
             talent_status.save()
 
             user_data = {
-                "resume": portfolio.resume.url if portfolio.resume else None,
                 "project_links": portfolio.project_links,
                 "references": portfolio.references,
             }
