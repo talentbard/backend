@@ -156,7 +156,6 @@ class SkillsExpertiseCreateView(APIView):
                 "primary_skills": skills_expertise.validated_data.get("primary_skills"),
                 "secondary_skills": skills_expertise.validated_data.get("secondary_skills"),
                 "certificate_images": skills_expertise.validated_data.get("certificate_images"),
-                "user_id": str(user_id),
             }
 
             return Response(

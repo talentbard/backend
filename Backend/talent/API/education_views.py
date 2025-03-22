@@ -134,7 +134,6 @@ class EducationCreateView(APIView):
             # Save the changes
             talent_status.save()
             user_data = {
-                "user_id": str(user.user_id),
                 "university_name": user.university_name,
                 "college_degree": user.college_degree,
                 "field_of_study": user.field_of_study,

@@ -146,7 +146,6 @@ class WorkExperienceCreateView(APIView):
                 "achievements": work_experience.achievements,
                 "technologies_used": work_experience.technologies_used,
                 "projects": work_experience.projects,
-                "user_id": str(work_experience.user_id),
             }
 
             return Response(
