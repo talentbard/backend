@@ -51,7 +51,7 @@ class CompanyRegistrationCreateView(APIView):
                         "primary_business_model": openapi.Schema(type=openapi.TYPE_STRING, description="Primary business model"),
                         "funding_raised": openapi.Schema(type=openapi.TYPE_STRING, description="Funding raised (yes/no)"),
                         "funding_rounds": openapi.Schema(type=openapi.TYPE_INTEGER, description="Funding rounds"),
-                        "latest_rounds": openapi.Schema(type=openapi.TYPE_STRING, description="Latest funding rounds"),
+                        "latest_rounds": openapi.Schema(type=openapi.TYPE_INTEGER, description="Latest funding rounds"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
                     required=["company_name", "company_phone", "about_company", "designation", "personal_contact", "company_work_email", "company_size", "industry", "sector", "primary_business_model", "user_id"],
