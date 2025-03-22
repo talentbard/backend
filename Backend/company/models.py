@@ -45,7 +45,6 @@ class CompanyRegistration(models.Model):
     industry = models.CharField(max_length=50, null=True, blank=True)
     sector = models.CharField(max_length=100)
     primary_business_model = models.CharField(max_length=20, null=True, blank=True)
-    funding_raised = models.CharField(max_length=3, default='no')
     funding_rounds = models.IntegerField(null=True, blank=True)
     latest_rounds = models.CharField(null=True, blank=True)
     user_id= models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
