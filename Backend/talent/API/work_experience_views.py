@@ -34,7 +34,7 @@ class WorkExperienceCreateView(APIView):
                     type=openapi.TYPE_OBJECT,
                     description="Work experience details",
                     properties={
-                        "job_title": openapi.Schema(type=openapi.TYPE_STRING, description="Job title"),
+                        "job_title": openapi.Schema(type=openapi.TYPE_STRING, descrer_idiption="Job title"),
                         "company": openapi.Schema(type=openapi.TYPE_STRING, description="Company name"),
                         "industry": openapi.Schema(type=openapi.TYPE_STRING, description="Industry"),
                         "start_date": openapi.Schema(type=openapi.TYPE_STRING, format="date", description="Start date (YYYY-MM-DD)"),
@@ -132,7 +132,7 @@ class WorkExperienceCreateView(APIView):
         if serializer.is_valid():
             work_experience = serializer.save()
             # Update Talent Registration Status
-            talent_status = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
+            talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
             talent_status.status_id = "4"
             talent_status.save()
 

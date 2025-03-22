@@ -82,7 +82,7 @@ class WorkExperience(models.Model):
     achievements = models.TextField(null=True, blank=True)
     technologies_used = models.CharField(max_length=200, null=True, blank=True)
     projects = models.TextField(null=True, blank=True)
-    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Linking to user
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE,db_column="user_id")  # Linking to user
 
     def __str__(self):
         return f"{self.job_title} at {self.company}"
