@@ -10,4 +10,4 @@ django-cors-headers==4.2.0
 bcrypt==4.0.1
 #psycopg2-binary==2.9.6
 dotenv
-google-generativeai
+google-generative
