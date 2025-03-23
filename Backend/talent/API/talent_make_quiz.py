@@ -6,7 +6,7 @@ from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from talent.models import SkillsExpertise
 from user_profile.models import UserProfile
-from google import genai
+import google.generativeai as genai
 import json, re,os
 
 HEADER_PARAMS = {
@@ -91,28 +91,46 @@ class TalentMakeQuizView(APIView):
         
         primary_skills = skills_expertise.primary_skills
         secondary_skills = skills_expertise.secondary_skills or []
-        
+        primary_skills = str(primary_skills)
+        secondary_skills = str(secondary_skills)
+
         # Prepare API prompt
         skill_text = f"Primary skills: {', '.join(primary_skills)}. Secondary skills: {', '.join(secondary_skills)}."
 
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key = api_key)
+    
+        prompt = f"""
+                Generate 10 professional multiple-choice questions based on the following skills. These questions are designed to evaluate freelancers' technical knowledge effectively. 
 
-        prompt=f'''I want 10 questions based on the skills I am mentioning below and those questions should be solveable within 10 mins
-                  ,these questions are for hiring freelancers.I want the questions in multiple choice of 4 options along with the correct option
-                  skills: {skill_text}
-                  i want the reponse to be in json format:
-                  question_no:1
-                  option_1:
-                  option_2:
-                  option_3:
-                  option_4:
-                  correct_option:, ......
-                  '''
+                **Requirements:**  
+                - Each question should be solvable within 10 minutes.  
+                - Questions should strictly assess knowledge of the mentioned skills without requiring additional HTML formatting.  
+                - Maintain a professional tone and focus purely on the technical aspects of the skills provided.  
+                - The difficulty level should align with the freelancer's skill level:
+                - **Beginner** → Easy  
+                - **Intermediate** → Medium  
+                - **Advanced/Expert** → Hard  
+                - Each question should have 4 answer options, with one correct answer.  
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt
-        )
+                **Skills:** {skill_text}  
+
+                **Response Format (JSON):**  
+                ```json
+                [
+                {{
+                    "question_no": 1,
+                    "question": "Your first question here",
+                    "option_1": "Option A",
+                    "option_2": "Option B",
+                    "option_3": "Option C",
+                    "option_4": "Option D",
+                    "correct_option": "Option X"
+                }},
+                ...
+                ]"""
+        
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
         
         response_content = response.text if hasattr(response, 'text') else str(response)
         
@@ -124,15 +142,8 @@ class TalentMakeQuizView(APIView):
             # formatted_response = format_response_for_readability(parsed_response)
             # return formatted_response
         print(parsed_response)
-        if response.status_code == 200:
-            return Response({
-                "message": "Questions generated successfully",
-                "payload": parsed_response,
-                "status": 200
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "message": "Failed to generate questions",
-                "payload": response.json(),
-                "status": response.status_code
-            }, status=response.status_code)
+        return Response({
+        "message": "Questions generated successfully",
+        "payload": parsed_response,
+        "status": 200
+        }, status=status.HTTP_200_OK)
