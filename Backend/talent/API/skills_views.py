@@ -148,6 +148,8 @@ class SkillsExpertiseCreateView(APIView):
             }
         )
         if skills_expertise.is_valid():
+
+            skills_expertise.save()
             talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
             talent_status.status_id = "2"
             talent_status.save()
