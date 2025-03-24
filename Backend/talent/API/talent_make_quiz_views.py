@@ -112,7 +112,7 @@ class TalentMakeQuizView(APIView):
                 - **Advanced/Expert** → Hard  
                 - Each question should have 4 answer options, with one correct answer.  
 
-                **Skills:** {skill_text}  
+                **Skills:**{skill_text} 
 
                 **Response Format (JSON):**  
                 ```json
