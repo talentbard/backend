@@ -163,7 +163,7 @@ class JobPreferences(models.Model):
     def __str__(self):
         return f"{self.job_title} - {self.user}"
 
-
+#Quiz Generation
 class TalentScore(models.Model):
     score_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -175,3 +175,11 @@ class TalentScore(models.Model):
 
     def __str__(self):
         return self.score_id
+    
+#Quiz Result
+class QuizResult(models.Model):
+    quiz_score = models.IntegerField(null=True,blank=True)
+    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.quiz_score

@@ -8,7 +8,9 @@ from .API.preffered_work_views import PreferredWorkTermsCreateView
 from .API.portfolio_views import PortfolioReferencesCreateView
 from .API.language_views import LanguageProficiencyCreateView
 from .API.talent_registration_status import TalentRegistrationStatusView
-from .API.talent_make_quiz import TalentMakeQuizView
+from .API.talent_make_quiz_views import TalentMakeQuizView
+from .API.talent_quiz_result_views import QuizResultCreateView
+
 
 urlpatterns = [
     path('register/', TalentRegistrationCreateView.as_view(), name='talent_register'),
@@ -20,6 +22,6 @@ urlpatterns = [
     path('portfolio/', PortfolioReferencesCreateView.as_view(), name='portfolio_references'),
     path('languages/', LanguageProficiencyCreateView.as_view(), name='language_proficiency'),
     path('talent_registration_status/', TalentRegistrationStatusView.as_view(), name='talent_registration_status'),
-    path('talent_make_quiz/', TalentMakeQuizView.as_view(), name='talent_make_quiz'),
-
+    path('talent_make_quiz_views/', TalentMakeQuizView.as_view(), name='talent_make_quiz_views'),
+    path('talent_quiz_result_views/', QuizResultCreateView.as_view(), name='talent_quiz_result_views'),
 ]
