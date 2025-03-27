@@ -9,7 +9,8 @@ from .models import (
     PreferredWorkTerms, 
     LanguageProficiency, 
     JobPreferences,
-    QuizResult
+    TalentScore,
+    AssignmentResult,
 )
 
 # Talent Registration Serializer
@@ -74,8 +75,14 @@ class JobPreferencesSerializer(serializers.ModelSerializer):
         model = JobPreferences
         fields = '__all__'
 
-#Quiz Result Serializer
-class QuizResultSerializer(serializers.ModelSerializer):
+# Talent Score Serializer
+class TalentScoreSerializer(serializers.ModelSerializer):
     class Meta:
-        model = QuizResult
+        model = TalentScore
+        fields = '__all__'
+
+# Assignment Result Serializer
+class AssignmentResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignmentResult
         fields = '__all__'

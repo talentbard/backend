@@ -10,11 +10,12 @@ from django.contrib.auth.hashers import make_password, check_password
 from talent.models import JobPreferences
 from talent.serializers import JobPreferencesSerializer
 from user_profile.models import UserProfile
+from talent.models import Education,TalentRegistrationStatus
+from talent.serializers import EducationSerializer
+
 HEADER_PARAMS = {
     'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
 }
-from talent.models import Education,TalentRegistrationStatus
-from talent.serializers import EducationSerializer
 
 class JobPreferencesCreateView(APIView):
     @swagger_auto_schema(
