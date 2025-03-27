@@ -92,6 +92,7 @@ class AssignmentResultCreateView(APIView):
                 {"error": "User ID, Assignment Score, Assignment Task are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
         user = UserProfile.objects.get(user_id=user_id)
 
         api_key = os.getenv('GEMENI_API_KEY')
