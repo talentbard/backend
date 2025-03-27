@@ -4,9 +4,9 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
-from talent.models import QuizResult, TalentRegistrationStatus
-from talent.serializers import QuizResultSerializer
+from talent.models import TalentRegistrationStatus
 from user_profile.models import UserProfile
+from talent.serializers import TalentScoreSerializer
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter(
@@ -16,7 +16,7 @@ HEADER_PARAMS = {
 
 class QuizResultCreateView(APIView):
     @swagger_auto_schema(
-        operation_description="Add work experience for a user.",
+        operation_description="Store user's quiz score.",
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -32,7 +32,7 @@ class QuizResultCreateView(APIView):
                 ),
                 "payload": openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    description="Work experience details",
+                    description="Quiz details",
                     properties={
                         "quiz_score": openapi.Schema(type=openapi.TYPE_INTEGER, description="Quiz Score"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
@@ -90,7 +90,7 @@ class QuizResultCreateView(APIView):
             )
         user = UserProfile.objects.get(user_id=user_id)
 
-        serializer = QuizResultSerializer(
+        serializer = TalentScoreSerializer(
             data={
                 "quiz_score": quiz_score,
                 "user_id": user.user_id,

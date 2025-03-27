@@ -10,6 +10,9 @@ from .API.language_views import LanguageProficiencyCreateView
 from .API.talent_registration_status import TalentRegistrationStatusView
 from .API.talent_make_quiz_views import TalentMakeQuizView
 from .API.talent_quiz_result_views import QuizResultCreateView
+from .API.talent_make_assignment_views import TalentMakeAssignmentView 
+from .API.talent_assignment_result_views import AssignmentResultCreateView
+
 
 
 urlpatterns = [
@@ -24,4 +27,6 @@ urlpatterns = [
     path('talent_registration_status/', TalentRegistrationStatusView.as_view(), name='talent_registration_status'),
     path('talent_make_quiz_views/', TalentMakeQuizView.as_view(), name='talent_make_quiz_views'),
     path('talent_quiz_result_views/', QuizResultCreateView.as_view(), name='talent_quiz_result_views'),
+    path('talent_make_assignment_views/', TalentMakeAssignmentView.as_view(), name='talent_make_assignment_views'),
+    path('talent_assignment_result_views/', AssignmentResultCreateView.as_view(), name='talent_assignment_result_views'),
 ]

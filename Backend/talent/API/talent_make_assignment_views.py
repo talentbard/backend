@@ -7,7 +7,9 @@ from user_profile.decorators import authenticate_user_session
 from talent.models import SkillsExpertise
 from user_profile.models import UserProfile
 import google.generativeai as genai
-import json, re,os
+import json, re, os
+from talent.serializers import AssignmentResultSerializer
+
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter(
@@ -15,9 +17,9 @@ HEADER_PARAMS = {
     ),
 }
 
-class TalentMakeQuizView(APIView):
+class TalentMakeAssignmentView(APIView):
     @swagger_auto_schema(
-        operation_description="generate questions",
+        operation_description="generate task",
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -33,7 +35,7 @@ class TalentMakeQuizView(APIView):
                 ),
                 "payload": openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    description="Quiz Generation based on skills",
+                    description="Assinment Genration based on skill set",
                     properties={
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
@@ -79,6 +81,8 @@ class TalentMakeQuizView(APIView):
     @authenticate_user_session
     def post(self, request):
         payload = request.data.get("payload", {})
+        # import pdb;pdb.set_trace()
+
         user_id = payload.get("user_id")
         api_key = os.getenv('GEMENI_API_KEY')
 
@@ -97,35 +101,35 @@ class TalentMakeQuizView(APIView):
 
         genai.configure(api_key = api_key)
     
-        prompt = f"""
-                Generate 10 professional multiple-choice questions based on the following skills. These questions are designed to evaluate freelancers' technical knowledge effectively. 
+        prompt = f'''
+            Generate a professional and practical task based on the following skills. The task should be designed to effectively assess a freelancer's technical expertise.  
 
-                **Requirements:**  
-                - Each question should be solvable within 10 minutes.  
-                - Questions should strictly assess knowledge of the mentioned skills without requiring additional HTML formatting.  
-                - Maintain a professional tone and focus purely on the technical aspects of the skills provided.  
-                - The difficulty level should align with the freelancer's skill level:
-                - **Beginner** → Easy  
-                - **Intermediate** → Medium  
-                - **Advanced/Expert** → Hard  
-                - Each question should have 4 answer options, with one correct answer.  
+            **Requirements:**  
+            - The task should be **realistic, practical, and solvable within 1-2 days**.  
+            - Ensure the task **strictly aligns with the given skills** and evaluates core competencies.  
+            - Maintain a **professional tone** and focus on a real-world scenario relevant to the freelancer’s expertise.  
+            - The complexity of the task should match the freelancer's skill level:
+            - **Beginner** → Basic implementation task  
+            - **Intermediate** → Moderate project with some problem-solving involved  
+            - **Advanced/Expert** → Complex problem requiring optimization, scalability, or deep technical knowledge  
+            - The task should **not require additional setup beyond the specified skills**.  
+            - Clearly define the **expected deliverables** and success criteria.  
 
-                **Skills:** {skill_text}  
+            **Skills:** {skill_text}  
 
-                **Response Format (JSON):**  
-                ```json
-                [
-                {{
-                    "question_no": 1,
-                    "question": "Your first question here",
-                    "option_1": "Option A",
-                    "option_2": "Option B",
-                    "option_3": "Option C",
-                    "option_4": "Option D",
-                    "correct_option": "Option X"
-                }},
-                ...
-                ]"""
+            **Response Format (JSON):**  
+            ```json
+            {{
+            "task_title": "Short title summarizing the task",
+            "task_description": "Detailed description of what the freelancer needs to do",
+            "expected_deliverables": [
+                "Deliverable 1",
+                "Deliverable 2",
+                "Deliverable 3"
+            ],
+            "difficulty_level": "Beginner / Intermediate / Advanced"
+            }},
+        '''
         
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
@@ -139,9 +143,32 @@ class TalentMakeQuizView(APIView):
             parsed_response = json.loads(json_text)
             # formatted_response = format_response_for_readability(parsed_response)
             # return formatted_response
-        print(parsed_response)
+        print(parsed_response)        
+        user = UserProfile.objects.get(user_id=user_id)
+
+        serializer = AssignmentResultSerializer(
+            data={
+                "user_id": user.user_id,
+                "assignment_task": str(parsed_response)
+            }
+        )
+        if serializer.is_valid():
+            try:
+                assignment_question = serializer.save()
+            except Exception as e:
+                return Response(
+                    {"error": f"An error occurred while saving the assignment: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        else:
+            return Response(
+                {"errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
         return Response({
-        "message": "Questions generated successfully",
+        "message": "Task generated successfully",
         "payload": parsed_response,
         "status": 200
         }, status=status.HTTP_200_OK)

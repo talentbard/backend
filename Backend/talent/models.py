@@ -153,7 +153,7 @@ class JobPreferences(models.Model):
         ('other', 'Other'),
     ]
 
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
     job_title = models.CharField(max_length=100, null=False)
     preferred_job_type = models.CharField(max_length=20,null=False)
     industry = models.CharField(max_length=50, null=False)
@@ -166,7 +166,7 @@ class JobPreferences(models.Model):
 #Quiz Generation
 class TalentScore(models.Model):
     score_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     quiz_score = models.IntegerField(null=True,blank=True)
     assignment_score = models.IntegerField(null=True,blank=True)
     interview_score = models.IntegerField(null=True,blank=True)
@@ -176,10 +176,13 @@ class TalentScore(models.Model):
     def __str__(self):
         return self.score_id
     
-#Quiz Result
-class QuizResult(models.Model):
-    quiz_score = models.IntegerField(null=True,blank=True)
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+#Assignment Generation
+class AssignmentResult(models.Model):
+    assignment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment_task = models.TextField(null=True, blank=True)
+    assignment_submission = models.TextField(null=True, blank=True)
+    assignment_score = models.CharField(null=True, blank=True)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.quiz_score
+        return self.assignment_id
