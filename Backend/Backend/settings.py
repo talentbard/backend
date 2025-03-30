@@ -137,8 +137,8 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME'),        # Load from .env
         'USER': os.getenv('DB_USER'),        # Load from .env
         'PASSWORD': os.getenv('DB_PASSWORD'),  # Load from .env
-        'HOST': os.getenv('DB_HOST', 'localhost'),  # Default to 'localhost' if not specified
-        'PORT': os.getenv('DB_PORT', '5432'),     # Default to '5432' if not specified
+        'HOST': os.getenv('DB_HOST'),  # Default to 'localhost' if not specified
+        'PORT': os.getenv('DB_PORT'),     # Default to '5432' if not specified
     }
 }
 
