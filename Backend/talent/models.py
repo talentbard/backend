@@ -170,7 +170,7 @@ class TalentScore(models.Model):
     quiz_score = models.IntegerField(null=True,blank=True)
     assignment_score = models.IntegerField(null=True,blank=True)
     interview_score = models.IntegerField(null=True,blank=True)
-    work_score = models.IntegerField(null=True,blank=True)
+    work_score = models.CharField(null=True,blank=True)
     grade = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
@@ -186,3 +186,14 @@ class AssignmentResult(models.Model):
 
     def __str__(self):
         return self.assignment_id
+    
+# Interview Scheduling
+class InterviewResult(models.Model):
+    interview_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    interview_done = models.BooleanField(default=False)
+    interview_scheduled = models.DateTimeField(null=True, blank=True)
+    interview_score = models.CharField(null=True, blank=True)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.interview_id
