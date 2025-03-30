@@ -108,6 +108,7 @@ class AssignmentResultCreateView(APIView):
             - **Efficiency & Optimization**: Is the solution optimized for performance and scalability (if applicable)?  
             - **Documentation & Readability**: Are there sufficient comments, a README, and necessary explanations?  
             - **Completeness**: Does the submission meet all expected deliverables?  
+            Please do give me the accurate rating in the scale of 1 to 10.
 
             **Assignment Task:** {assignment_task}  
             **GitHub Link:** {assignment_submission}  
