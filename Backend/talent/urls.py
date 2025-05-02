@@ -13,6 +13,7 @@ from .API.talent_quiz_result_views import QuizResultCreateView
 from .API.talent_make_assignment_views import TalentMakeAssignmentView 
 from .API.talent_assignment_result_views import AssignmentResultCreateView
 from .API.talent_interview_scheduling_views import InterviewResultCreateView
+from .API.talent_profile_views import ProfileCreateView
 
 
 
@@ -31,4 +32,5 @@ urlpatterns = [
     path('talent_make_assignment_views/', TalentMakeAssignmentView.as_view(), name='talent_make_assignment_views'),
     path('talent_assignment_result_views/', AssignmentResultCreateView.as_view(), name='talent_assignment_result_views'),
     path('talent_interview_scheduling_views/', InterviewResultCreateView.as_view(), name='talent_interview_scheduling_views'),
+    path('talent_profile_views/', ProfileCreateView.as_view(), name='talent_profile_views'),
 ]
