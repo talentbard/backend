@@ -18,6 +18,7 @@ from django.urls import path, include
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
+from django.views.generic import TemplateView
 
 # Swagger Schema Configuration
 schema_view = get_schema_view(
@@ -44,5 +45,9 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
     path('swagger.json/', schema_view.without_ui(cache_timeout=0), name='swagger-json'),
     path('api-auth/', include('rest_framework.urls')),
+
+    path('test-chat/', TemplateView.as_view(template_name='chat/test_chat.html')),
+    
+
 ]
 

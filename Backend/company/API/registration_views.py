@@ -36,7 +36,9 @@ class CompanyRegistrationCreateView(APIView):
                     description="Company registration details",
                     properties={
                         "company_name": openapi.Schema(type=openapi.TYPE_STRING, description="Company name"),
+                        "company_founder": openapi.Schema(type=openapi.TYPE_STRING, description="Company founder"),
                         "company_phone": openapi.Schema(type=openapi.TYPE_STRING, description="Company phone number"),
+                        "company_location": openapi.Schema(type=openapi.TYPE_STRING, description="Company location"),
                         "about_company": openapi.Schema(type=openapi.TYPE_STRING, description="About the company"),
                         "company_website": openapi.Schema(type=openapi.TYPE_STRING, format="url", description="Company website"),
                         "company_linkedin": openapi.Schema(type=openapi.TYPE_STRING, format="url", description="Company LinkedIn profile"),
@@ -55,7 +57,7 @@ class CompanyRegistrationCreateView(APIView):
                         "latest_rounds": openapi.Schema(type=openapi.TYPE_STRING, description="Latest funding rounds"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
-                    required=["company_name", "company_phone", "about_company", "designation", "personal_contact", "company_work_email", "company_size", "industry", "sector", "primary_business_model", "user_id"],
+                    required=["company_name","company_founder","company_location" "company_phone", "about_company", "designation", "personal_contact", "company_work_email", "company_size", "industry", "sector", "primary_business_model", "user_id"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -72,7 +74,9 @@ class CompanyRegistrationCreateView(APIView):
         payload = request.data.get("payload", {})
         
         company_name = payload.get("company_name")
+        company_founder = payload.get("company_founder")
         company_phone = payload.get("company_phone")
+        company_location = payload.get("company_location")
         about_company = payload.get("about_company")
         company_website = payload.get("company_website")
         company_linkedin = payload.get("company_linkedin")
@@ -102,7 +106,9 @@ class CompanyRegistrationCreateView(APIView):
         serializer = CompanyRegistrationSerializer(
             data={
                 "company_name": company_name,
+                "company_founder": company_founder,
                 "company_phone": company_phone,
+                "company_location": company_location,
                 "about_company": about_company,
                 "company_website": company_website,
                 "company_linkedin": company_linkedin,
