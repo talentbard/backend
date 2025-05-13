@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'company',
     'channels',
     'chat',
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -71,6 +72,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
+
 ]
 
 
@@ -80,6 +83,17 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_HEADERS = [
     '*',  # Allows all headers
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "access_token",
+    "accesstoken"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -121,6 +135,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -241,3 +257,23 @@ api_settings.USER_ID_FIELD = "user_id"
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False  # Disable forced HTTPS redirection in Django (Nginx handles it)
+
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+# Google OAuth keys
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY') #Client ID
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET') #Client Secret
+# Redirect URLs
+LOGIN_REDIRECT_URL = '/verify-otp/'
+LOGOUT_REDIRECT_URL = '/'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOSTUSER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOSTPASSWORD') 

@@ -1,14 +1,7 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import Message, ChatRoom, UserProfile
-from .serializers import MessageSerializer, ChatRoomSerializer, UserProfileSerializer
-from django.contrib.auth import get_user_model
+from django.shortcuts import render
 
-class MessageViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = MessageSerializer
-    def get_queryset(self):
-        room_id = self.request.query_params.get('room')
-        if room_id:
-            return Message.objects.filter(room_id=room_id).order_by('timestamp')
-        return Message.objects.none()
+def chat_list(request):
+    return render(request, 'chat/chat_list.html')  # Make sure this template exists
+
+def chat_room(request, room_id):
+    return render(request, 'chat/chat_room.html', {'room_id': room_id})

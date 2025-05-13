@@ -1,29 +1,22 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.auth.models import User  # ✅ This line imports the User model
 
 
 class Room(models.Model):
-    # A chat room: could be group or direct (private)
-    name = models.CharField(max_length=255, blank=True)
-    is_group = models.BooleanField(default=True) 
-    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='rooms')
-    created_at = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.name or f"Room {self.id}"
+        return self.name
 
 class Message(models.Model):
-    # A message in a room
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='messages')
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    # Delivery and read flags (could also use separate Receipt model for per-user tracking)
-    delivered = models.BooleanField(default=False)
-    read = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"[{self.room}] {self.sender}: {self.content[:20]}"
+        return f'{self.sender.username} - {self.content[:20]}'
 
 class UserStatus(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

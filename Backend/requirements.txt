@@ -13,3 +13,4 @@ dotenv
 google-generative
 channels
 channels_redis
+daphne

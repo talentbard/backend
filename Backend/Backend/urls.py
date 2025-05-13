@@ -45,9 +45,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
     path('swagger.json/', schema_view.without_ui(cache_timeout=0), name='swagger-json'),
     path('api-auth/', include('rest_framework.urls')),
-
+    path('chat/', include('chat.urls')),
     path('test-chat/', TemplateView.as_view(template_name='chat/test_chat.html')),
-    
-
+    #path('auth/', include('social_django.urls', namespace='social')),
 ]
-
