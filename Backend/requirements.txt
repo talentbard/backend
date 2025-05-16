@@ -14,3 +14,4 @@ google-generative
 channels
 channels_redis
 daphne
+social-auth-app-django
