@@ -3,7 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from .models import UserProfile
+from django.utils import timezone
+from datetime import datetime, timedelta
+from .models import UserProfile, EmailOTP
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .serializers import (
@@ -15,6 +17,11 @@ from .serializers import (
 from talent.serializers import TalentRegistrationStatusSerializer
 from .decorators import authenticate_user_session
 from django.contrib.auth.hashers import make_password, check_password
+import random
+from django.core.mail import send_mail
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
@@ -348,3 +355,257 @@ class UserProfileView(APIView):
                 {"error": "User not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+#Google login view
+class GoogleLoginSendOTP(APIView):
+    """
+    Handles Google login:
+    - Accepts Google login payload (email, token, role)
+    - Validates user
+    - Sends OTP to email
+    - Returns JWT tokens if valid
+    """
+
+    @swagger_auto_schema(
+        operation_description="Google login - receive email and send OTP",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "auth_params": openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    description="Authentication-related parameters",
+                    properties={
+                        "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
+                        "other_param": openapi.Schema(type=openapi.TYPE_STRING, description="Other optional parameter"),
+                    },
+                ),
+                "payload": openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    description="Google login details",
+                    properties={
+                        "email": openapi.Schema(type=openapi.TYPE_STRING, description="User email"),                    },
+                    required=["email"],
+                ),
+            },
+            required=["payload"],
+        ),
+        responses={
+            200: openapi.Response(
+                "OTP sent successfully",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message": openapi.Schema(type=openapi.TYPE_STRING),
+                        "access_token": openapi.Schema(type=openapi.TYPE_STRING),
+                        "refresh_token": openapi.Schema(type=openapi.TYPE_STRING),
+                        "user_id": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            400: openapi.Response(
+                "Email not provided or invalid",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                "User Not Found",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
+                ),
+            ),
+            401: openapi.Response(
+                "Unauthorized",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
+                ),
+            ),
+        },
+    )
+    def post(self, request):
+        payload = request.data.get('payload', {})
+        email = payload.get('email')
+        google_token = payload.get('google_token')
+
+        if not email :
+            return Response(
+                {"error": "Both email are required in the payload."},
+                status=status.HTTP_400_EMAIL_INVALID,
+            )
+
+        # TODO: Verify the google_token here with Google APIs if needed
+
+        # Generate OTP
+        otp = random.randint(100000, 999999)
+        # Delete existing OTP for email (if any)
+        EmailOTP.objects.filter(email=email).delete()
+
+        # Save or update OTP in DB
+        EmailOTP.objects.update_or_create(
+            email=email,
+            defaults={
+                'otp': str(otp),
+                'created_at': timezone.now()
+            }
+        )
+
+        try:
+            user = UserProfile.objects.get(email_id=email)
+
+            # Send OTP email
+            send_mail(
+                subject="Your TalentBard OTP",
+                message=f"Hello {user.full_name}, your OTP is: {otp}",
+                from_email="noreply@talentbard.com",
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
+            # Return JWT tokens (user is assumed registered and verified via Google)
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "message": "OTP sent successfully to your email.",
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+                "user_id": str(user.user_id)
+            }, status=status.HTTP_200_OK)
+
+        except UserProfile.DoesNotExist:
+            # User not registered: just send OTP
+            send_mail(
+                subject="Your TalentBard OTP",
+                message=f"Hello, your OTP is: {otp}",
+                from_email="noreply@talentbard.com",
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
+            return Response({
+                "message": "OTP sent successfully to your email. Proceed with registration."
+            }, status=status.HTTP_200_OK)
+        
+
+#Verifying the OTP generated and sent to the email
+class VerifyOTPView(APIView):
+    """
+    Verifies the OTP sent to user's email.
+    If verified and user exists, returns tokens and user info.
+    Otherwise, instructs to proceed with registration.
+    """
+
+    @swagger_auto_schema(
+        operation_description="Verify OTP sent to user's email",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "payload": openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    description="OTP verification details",
+                    properties={
+                        "email": openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+                        "otp": openapi.Schema(type=openapi.TYPE_STRING, description="OTP received by user"),
+                    },
+                    required=["email", "otp"],
+                )
+            },
+            required=["payload"],
+        ),
+        responses={
+            200: openapi.Response(
+                "OTP Verified",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message": openapi.Schema(type=openapi.TYPE_STRING),
+                        "user_id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "access_token": openapi.Schema(type=openapi.TYPE_STRING),
+                        "refresh_token": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            400: openapi.Response(
+                "Invalid OTP or email",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                "User not found",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            401: openapi.Response(
+                "Unauthorized",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
+                ),
+            ),
+        },
+    )
+    def post(self, request):
+        payload = request.data.get("payload", {})
+        email = payload.get("email")
+        otp = payload.get("otp")
+
+        if not email or not otp:
+            return Response(
+                {"error": "Email and OTP are required in the payload."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            otp_record = EmailOTP.objects.get(email=email)
+
+            if otp_record.is_expired():
+                otp_record.delete()
+                return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if otp_record.otp != str(otp):
+                return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check expiry if needed
+            if timezone.now() > otp_record.created_at + timedelta(minutes=5):
+                return Response({"error": "OTP expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+            otp_record.delete()  # OTP used, delete it
+
+        except EmailOTP.DoesNotExist:
+            return Response({"error": "No OTP found for this email."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = UserProfile.objects.get(email_id=email)
+
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "message": "OTP Verified Successfully.",
+                "access_token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+                "user_id": str(user.user_id)
+            }, status=status.HTTP_200_OK)
+
+        except UserProfile.DoesNotExist:
+            return Response({
+                "message": "OTP verified, but user does not exist. Please complete registration."
+            }, status=status.HTTP_404_NOT_FOUND)
