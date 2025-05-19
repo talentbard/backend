@@ -23,34 +23,46 @@ class PortfolioReferencesCreateView(APIView):
         filename = f"resumes/{uuid.uuid4()}_{file.name}"
         file_content = file.read()
 
-        # Upload to Supabase
         response = client.storage.from_('resumes').upload(
             path=filename,
             file=file_content,
             file_options={"content-type": file.content_type}
         )
 
-        # Get public URL
         public_url = client.storage.from_('resumes').get_public_url(filename)
         return public_url
 
     @swagger_auto_schema(
-        operation_description="Upload resume and save portfolio info.",
+        operation_description="Upload resume and save portfolio references.",
         manual_parameters=[HEADER_PARAMS['access_token']],
         consumes=["multipart/form-data"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["user_id"],
             properties={
-                "resume": openapi.Schema(type=openapi.TYPE_FILE, description="Resume PDF"),
-                "project_links": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
-                "references": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
-                "user_id": openapi.Schema(type=openapi.TYPE_STRING),
-                "refresh_token": openapi.Schema(type=openapi.TYPE_STRING),
-            }
+                "auth_params": openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    description="Authentication parameters",
+                    properties={
+                        "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
+                        "refresh_token": openapi.Schema(type=openapi.TYPE_STRING, description="Refresh token"),
+                    },
+                    required=["user_id", "refresh_token"],
+                ),
+                "payload": openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    description="Portfolio details",
+                    properties={
+                        "resume": openapi.Schema(type=openapi.TYPE_FILE, description="Resume PDF"),
+                        "project_links": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+                        "references": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+                    },
+                    required=["resume"],
+                ),
+            },
+            required=["auth_params", "payload"],
         ),
         responses={
-            200: openapi.Response(description="Success"),
+            201: openapi.Response(description="Created"),
             400: openapi.Response(description="Bad Request"),
             401: openapi.Response(description="Unauthorized"),
             404: openapi.Response(description="User Not Found"),
@@ -58,10 +70,13 @@ class PortfolioReferencesCreateView(APIView):
     )
     @authenticate_user_session
     def post(self, request):
-        resume_file = request.FILES.get("resume")
-        project_links = request.data.getlist("project_links")
-        references = request.data.getlist("references")
-        user_id = request.data.get("user_id")
+        auth_params = request.data.get("auth_params", {})
+        payload = request.data.get("payload", {})
+
+        user_id = auth_params.get("user_id")
+        resume_file = request.FILES.get("resume") or payload.get("resume")
+        project_links = payload.get("project_links", [])
+        references = payload.get("references", [])
 
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -71,7 +86,6 @@ class PortfolioReferencesCreateView(APIView):
         except UserProfile.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Upload resume to Supabase
         resume_url = None
         if resume_file:
             try:
@@ -79,7 +93,6 @@ class PortfolioReferencesCreateView(APIView):
             except Exception as e:
                 return Response({"error": f"Failed to upload resume: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Save to DB
         serializer = PortfolioReferencesSerializer(data={
             "resume": resume_url,
             "project_links": project_links,
@@ -90,7 +103,6 @@ class PortfolioReferencesCreateView(APIView):
         if serializer.is_valid():
             portfolio = serializer.save()
 
-            # Update status
             TalentRegistrationStatus.objects.update_or_create(
                 user_id=user.user_id,
                 defaults={"talent_status": "5"}
