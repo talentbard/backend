@@ -1,22 +1,41 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
-from talent.models import PreferredWorkTerms, TalentRegistrationStatus
-from talent.serializers import PreferredWorkTermsSerializer
 from user_profile.models import UserProfile
+from talent.models import PortfolioReferences, TalentRegistrationStatus
+from talent.serializers import PortfolioReferencesSerializer
+from supabase_client import get_supabase_client
+import uuid
 
 HEADER_PARAMS = {
-    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
+    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.TYPE_STRING),
 }
 
-class PreferredWorkTermsCreateView(APIView):
+class PortfolioReferencesCreateView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+
+    def upload_resume_to_supabase(self, file):
+        client = get_supabase_client()
+        filename = f"resumes/{uuid.uuid4()}_{file.name}"
+        file_content = file.read()
+
+        response = client.storage.from_('resumes').upload(
+            path=filename,
+            file=file_content,
+            file_options={"content-type": file.content_type}
+        )
+
+        public_url = client.storage.from_('resumes').get_public_url(filename)
+        return public_url
+
     @swagger_auto_schema(
-        operation_description="Save user's preferred work terms.",
-        consumes=["application/json"],
+        operation_description="Upload resume and save portfolio references.",
         manual_parameters=[HEADER_PARAMS['access_token']],
+        consumes=["multipart/form-data"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -27,120 +46,76 @@ class PreferredWorkTermsCreateView(APIView):
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                         "refresh_token": openapi.Schema(type=openapi.TYPE_STRING, description="Refresh token"),
                     },
-                    required=["user_id","refresh_token"],
+                    required=["user_id", "refresh_token"],
                 ),
                 "payload": openapi.Schema(
                     type=openapi.TYPE_OBJECT,
-                    description="Preferred work terms details",
+                    description="Portfolio details",
                     properties={
-                        "work_type": openapi.Schema(
-                            type=openapi.TYPE_STRING, 
-                            description="Type of work (full_time, part_time, contract, freelance, internship)"
-                        ),
-                        "availability": openapi.Schema(
-                            type=openapi.TYPE_STRING, 
-                            description="Availability details"
-                        ),
-                        "salary_expectation": openapi.Schema(
-                            type=openapi.TYPE_STRING, 
-                            description="Salary expectation"
-                        ),
-                        "additional_notes": openapi.Schema(
-                            type=openapi.TYPE_STRING, 
-                            description="Additional notes"
-                        ),
-                        "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
+                        "resume": openapi.Schema(type=openapi.TYPE_FILE, description="Resume PDF"),
+                        "project_links": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
+                        "references": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING)),
                     },
-                    required=["user_id", "work_type"],
+                    required=["resume"],
                 ),
             },
-            required=["payload", "auth_params"],
+            required=["auth_params", "payload"],
         ),
         responses={
-            200: openapi.Response(
-                "Success",
-                openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "work_type": openapi.Schema(type=openapi.TYPE_STRING, description="Work type"),
-                        "availability": openapi.Schema(type=openapi.TYPE_STRING, description="Availability"),
-                        "salary_expectation": openapi.Schema(type=openapi.TYPE_STRING, description="Salary expectation"),
-                        "additional_notes": openapi.Schema(type=openapi.TYPE_STRING, description="Additional notes"),
-                        "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
-                    },
-                ),
-            ),
-            400: openapi.Response(
-                "Bad Request",
-                openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
-                    },
-                ),
-            ),
-            404: openapi.Response(
-                "User Not Found",
-                openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
-                    },
-                ),
-            ),
-            401: openapi.Response(
-                "Unauthorized",
-                openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
-                    },
-                ),
-            ),
-        },
+            201: openapi.Response(description="Created"),
+            400: openapi.Response(description="Bad Request"),
+            401: openapi.Response(description="Unauthorized"),
+            404: openapi.Response(description="User Not Found"),
+        }
     )
     @authenticate_user_session
     def post(self, request):
+        auth_params = request.data.get("auth_params", {})
         payload = request.data.get("payload", {})
 
-        work_type = payload.get("work_type")
-        availability = payload.get("availability")
-        salary_expectation = payload.get("salary_expectation")
-        additional_notes = payload.get("additional_notes")
-        user_id = payload.get("user_id")
+        user_id = auth_params.get("user_id")
+        resume_file = request.FILES.get("resume") or payload.get("resume")
+        project_links = payload.get("project_links", [])
+        references = payload.get("references", [])
 
-        if not work_type or not user_id:
-            return Response(
-                {"error": "User ID and Work Type are required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        user = UserProfile.objects.get(user_id=user_id)
+        if not user_id:
+            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = PreferredWorkTermsSerializer(
-            data={
-                "work_type": work_type,
-                "availability": availability,
-                "salary_expectation": salary_expectation,
-                "additional_notes": additional_notes,
-                "user_id": user.user_id,
-            }
-        )
+        try:
+            user = UserProfile.objects.get(user_id=user_id)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        resume_url = None
+        if resume_file:
+            try:
+                resume_url = self.upload_resume_to_supabase(resume_file)
+            except Exception as e:
+                return Response({"error": f"Failed to upload resume: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        serializer = PortfolioReferencesSerializer(data={
+            "resume": resume_url,
+            "project_links": project_links,
+            "references": references,
+            "user_id": user.user_id
+        })
 
         if serializer.is_valid():
-            work_terms = serializer.save()
-            talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "6"
-            talent_status.save()
-            user_data = {
-                "work_type": work_terms.work_type,
-                "availability": work_terms.availability,
-                "salary_expectation": work_terms.salary_expectation,
-                "additional_notes": work_terms.additional_notes,
-            }
+            portfolio = serializer.save()
 
-            return Response(
-                {"message": "Preferred Work Terms added successfully", "user_data": user_data},
-                status=status.HTTP_201_CREATED,
+            TalentRegistrationStatus.objects.update_or_create(
+                user_id=user.user_id,
+                defaults={"talent_status": "5"}
             )
+
+            return Response({
+                "message": "Portfolio added successfully",
+                "user_data": {
+                    "resume": resume_url,
+                    "project_links": portfolio.project_links,
+                    "references": portfolio.references,
+                    "user_id": str(user.user_id)
+                }
+            }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
