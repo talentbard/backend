@@ -17,7 +17,7 @@ from .serializers import (
 from talent.serializers import TalentRegistrationStatusSerializer
 from .decorators import authenticate_user_session
 from django.contrib.auth.hashers import make_password, check_password
-import random
+import random, re
 from django.core.mail import send_mail
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
@@ -361,14 +361,14 @@ class UserProfileView(APIView):
 class GoogleLoginSendOTP(APIView):
     """
     Handles Google login:
-    - Accepts Google login payload (email, token, role)
-    - Validates user
+    - Accepts Google login payload (email, google_token)
+    - Validates Google token and user
     - Sends OTP to email
     - Returns JWT tokens if valid
     """
 
     @swagger_auto_schema(
-        operation_description="Google login - receive email and send OTP",
+        operation_description="Google login - receive email and Google token, validate, and send OTP",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
@@ -384,7 +384,8 @@ class GoogleLoginSendOTP(APIView):
                     type=openapi.TYPE_OBJECT,
                     description="Google login details",
                     properties={
-                        "email": openapi.Schema(type=openapi.TYPE_STRING, description="User email"),                    },
+                        "email": openapi.Schema(type=openapi.TYPE_STRING, description="User email"),
+                    },
                     required=["email"],
                 ),
             },
@@ -397,23 +398,11 @@ class GoogleLoginSendOTP(APIView):
                     type=openapi.TYPE_OBJECT,
                     properties={
                         "message": openapi.Schema(type=openapi.TYPE_STRING),
-                        "access_token": openapi.Schema(type=openapi.TYPE_STRING),
-                        "refresh_token": openapi.Schema(type=openapi.TYPE_STRING),
-                        "user_id": openapi.Schema(type=openapi.TYPE_STRING),
                     },
                 ),
             ),
             400: openapi.Response(
-                "Email not provided or invalid",
-                openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
-                    },
-                ),
-            ),
-            404: openapi.Response(
-                "User Not Found",
+                "Email  not provided or invalid",
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -430,45 +419,178 @@ class GoogleLoginSendOTP(APIView):
                     },
                 ),
             ),
+            404: openapi.Response(
+                "User Not Found",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
+                ),
+            ),
+            500: openapi.Response(
+                "Server Error",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "error": openapi.Schema(type=openapi.TYPE_STRING, description="Error message"),
+                    },
+                ),
+            ),
         },
     )
     def post(self, request):
         payload = request.data.get('payload', {})
         email = payload.get('email')
 
-        if not email :
+        # Validate email presence
+        if not email:
             return Response(
-                {"error": "Both email are required in the payload."},
-                status=status.HTTP_400_EMAIL_INVALID,
+                {"error": "Email are required in the payload."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # TODO: Verify the google_token here with Google APIs if needed
+        # Validate email format
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, email):
+            return Response(
+                {"error": "Invalid email format."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
 
         # Generate OTP
         otp = random.randint(100000, 999999)
+
         # Delete existing OTP for email (if any)
-        EmailOTP.objects.filter(email=email).delete()
+        try:
+            EmailOTP.objects.filter(email=email).delete()
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to clear previous OTP: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # Save or update OTP in DB
-        EmailOTP.objects.update_or_create(
-            email=email,
-            defaults={
-                'otp': str(otp),
-                'created_at': timezone.now()
-            }
-        )
-
+        try:
+            EmailOTP.objects.update_or_create(
+                email=email,
+                defaults={
+                    'otp': str(otp),
+                    'created_at': timezone.now()
+                }
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to save OTP: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # Send OTP email
-        send_mail(
-            subject="Your TalentBard OTP",
-            message=f"Hello Talent, your OTP is: {otp}",
-            from_email="noreply@talentbard.com",
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        try:
+            subject = "Your TalentBard OTP for Account Verification"
+            message = f"""
+Dear Talent,
 
-        # Return JWT tokens (user is assumed registered and verified via Google)
+Thank you for choosing TalentBard! To proceed with your account verification, please use the following One-Time Password (OTP):
+
+Your OTP: {otp}
+
+This OTP is valid for the next 10 minutes. Please enter it in the verification field to complete the process. If you did not request this OTP, please ignore this email or contact our support team at support@talentbard.com.
+
+We’re excited to have you on board!
+
+Best regards,
+The TalentBard Team
+"""
+            html_message = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }}
+        .header {{
+            text-align: center;
+            padding: 20px 0;
+            background-color: #00A3E0;
+            color: #ffffff;
+            border-radius: 8px 8px 0 0;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 24px;
+        }}
+        .content {{
+            padding: 20px;
+            line-height: 1.6;
+            color: #333333;
+        }}
+        .otp {{
+            font-size: 24px;
+            font-weight: bold;
+            color: #00A3E0;
+            text-align: center;
+            margin: 20px 0;
+        }}
+        .footer {{
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777777;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to TalentBard</h1>
+        </div>
+        <div class="content">
+            <p>Dear Talent,</p>
+            <p>Thank you for choosing TalentBard! To verify your account, please use the following One-Time Password (OTP):</p>
+            <div class="otp">{otp}</div>
+            <p>This OTP is valid for the next 5 minutes. Please enter it in the verification field to complete the process.</p>
+            <p>If you did not request this OTP, please ignore this email or contact our support team at <a href="mailto:support@talentbard.com">support@talentbard.com</a>.</p>
+            <p>We’re excited to have you on board and look forward to helping you showcase your talent!</p>
+            <p>Best regards,<br>The TalentBard Team</p>
+        </div>
+        <div class="footer">
+            <p>© 2025 TalentBard. All rights reserved.</p>
+            <p>Need help? Contact us at <a href="mailto:support@talentbard.com">support@talentbard.com</a></p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email="noreply@talentbard.com",
+                recipient_list=[email],
+                fail_silently=False,
+                html_message=html_message,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to send OTP email: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response({
             "message": "OTP sent successfully to your email.",
         }, status=status.HTTP_200_OK)
