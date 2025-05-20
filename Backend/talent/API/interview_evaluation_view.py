@@ -5,7 +5,8 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from user_profile.models import UserProfile
-from talent.models import InterviewAnswer ,TalentRegistrationStatus
+from talent.models import InterviewAnswer, TalentRegistrationStatus, TalentScore
+from talent.serializers import InterviewResultSerializer, TalentScoreSerializer
 import requests
 import json
 import os
@@ -166,7 +167,6 @@ class InterviewAnswersSaveView(APIView):
             )
             response.raise_for_status()
             response_data = response.json()
-            print(response_data)
             raw = response_data["choices"][0]["message"]["content"]
             evaluation = json.loads(raw)
             if not isinstance(evaluation, dict) or "feedback" not in evaluation or "score" not in evaluation:
@@ -189,20 +189,61 @@ class InterviewAnswersSaveView(APIView):
                 question_answers=question_answers,
                 score=total_score
             )
-            talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            # Update talent_status
-            talent_status.talent_status = "11"
-            # Save the changes
-            talent_status.save()
         except Exception as e:
             return Response(
                 {"error": f"Failed to save answers: {str(e)}", "status": 500},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        # Save interview score to TalentScore model
+        serializer = TalentScoreSerializer(
+            data={
+                "interview_score": total_score,
+                "user_id": user.user_id,
+            }
+        )
+        if serializer.is_valid():
+            talent_score = serializer.save()
+        else:
+            return Response(
+                {"error": serializer.errors, "status": 400},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Save to InterviewResult model
+        serializer = InterviewResultSerializer(
+            data={
+                "interview_score": str(total_score),
+                "user_id": user.user_id,
+            }
+        )
+        if serializer.is_valid():
+            interview_result = serializer.save()
+        else:
+            return Response(
+                {"error": serializer.errors, "status": 400},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update TalentRegistrationStatus
+        try:
+            talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
+            talent_status.talent_status = "11"
+            talent_status.save()
+        except TalentRegistrationStatus.DoesNotExist:
+            return Response(
+                {"error": "Talent registration status not found", "status": 404},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user_data = {
+            "interview_score": interview_result.interview_score,
+        }
+
         return Response(
             {
                 "message": "Answers evaluated and saved successfully",
+                "user_data": user_data,
                 "payload": {
                     "interview_answer_id": interview_answer.interview_answer_id,
                     "question_answers": interview_answer.question_answers,

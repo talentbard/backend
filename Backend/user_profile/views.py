@@ -435,7 +435,6 @@ class GoogleLoginSendOTP(APIView):
     def post(self, request):
         payload = request.data.get('payload', {})
         email = payload.get('email')
-        google_token = payload.get('google_token')
 
         if not email :
             return Response(
@@ -459,41 +458,21 @@ class GoogleLoginSendOTP(APIView):
             }
         )
 
-        try:
-            user = UserProfile.objects.get(email_id=email)
 
-            # Send OTP email
-            send_mail(
-                subject="Your TalentBard OTP",
-                message=f"Hello {user.full_name}, your OTP is: {otp}",
-                from_email="noreply@talentbard.com",
-                recipient_list=[email],
-                fail_silently=False,
-            )
+        # Send OTP email
+        send_mail(
+            subject="Your TalentBard OTP",
+            message=f"Hello Talent, your OTP is: {otp}",
+            from_email="noreply@talentbard.com",
+            recipient_list=[email],
+            fail_silently=False,
+        )
 
-            # Return JWT tokens (user is assumed registered and verified via Google)
-            refresh = RefreshToken.for_user(user)
+        # Return JWT tokens (user is assumed registered and verified via Google)
+        return Response({
+            "message": "OTP sent successfully to your email.",
+        }, status=status.HTTP_200_OK)
 
-            return Response({
-                "message": "OTP sent successfully to your email.",
-                "access_token": str(refresh.access_token),
-                "refresh_token": str(refresh),
-                "user_id": str(user.user_id)
-            }, status=status.HTTP_200_OK)
-
-        except UserProfile.DoesNotExist:
-            # User not registered: just send OTP
-            send_mail(
-                subject="Your TalentBard OTP",
-                message=f"Hello, your OTP is: {otp}",
-                from_email="noreply@talentbard.com",
-                recipient_list=[email],
-                fail_silently=False,
-            )
-
-            return Response({
-                "message": "OTP sent successfully to your email. Proceed with registration."
-            }, status=status.HTTP_200_OK)
         
 
 #Verifying the OTP generated and sent to the email
@@ -590,22 +569,9 @@ class VerifyOTPView(APIView):
 
             otp_record.delete()  # OTP used, delete it
 
-        except EmailOTP.DoesNotExist:
-            return Response({"error": "No OTP found for this email."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            user = UserProfile.objects.get(email_id=email)
-
-            refresh = RefreshToken.for_user(user)
-
             return Response({
-                "message": "OTP Verified Successfully.",
-                "access_token": str(refresh.access_token),
-                "refresh_token": str(refresh),
-                "user_id": str(user.user_id)
+                "message": "OTP Verified Successfully."
             }, status=status.HTTP_200_OK)
 
-        except UserProfile.DoesNotExist:
-            return Response({
-                "message": "OTP verified, but user does not exist. Please complete registration."
-            }, status=status.HTTP_404_NOT_FOUND)
+        except EmailOTP.DoesNotExist:
+            return Response({"error": "No OTP found for this email."}, status=status.HTTP_400_BAD_REQUEST)
