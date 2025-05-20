@@ -8,7 +8,7 @@ from talent.models import JobPreferences, InterviewQuestion, PortfolioReferences
 from user_profile.models import UserProfile
 import json
 import requests
-import os
+import os, re
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter(
@@ -173,8 +173,12 @@ class InterviewQuestionsView(APIView):
                 )
                 response.raise_for_status()
                 response_data = response.json()
+                print(response_data)
                 raw = response_data["choices"][0]["message"]["content"]
-                questions = json.loads(raw)
+                match = re.search(r"\[.*\]", raw, re.DOTALL)
+                if not match:
+                    raise ValueError("Could not extract a JSON array from the response.")
+                questions = json.loads(match.group(0))
                 if not isinstance(questions, list) or len(questions) != 10:
                     raise ValueError("Response must be a JSON array of 10 questions")
             except (requests.RequestException, ValueError, KeyError) as e:

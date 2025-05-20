@@ -110,7 +110,7 @@ class InterviewQuestionsRetrieveView(APIView):
             )
 
         try:
-            user = UserProfile.objects.get(id=user_id)
+            user = UserProfile.objects.get(user_id=user_id)
         except UserProfile.DoesNotExist:
             return Response(
                 {"error": "User not found", "status": 404},

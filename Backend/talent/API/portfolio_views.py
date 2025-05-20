@@ -100,7 +100,7 @@ class PortfolioReferencesCreateView(APIView):
                 "resume": resume_text,
                 "project_links": project_links,
                 "references": references,
-                "user_id": user.id  # Use UserProfile instance ID
+                "user_id": user.user_id  # Use UserProfile instance ID
             })
 
             if serializer.is_valid():

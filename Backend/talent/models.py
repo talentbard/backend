@@ -146,7 +146,7 @@ class JobPreferences(models.Model):
     def __str__(self):
         return f"{self.job_title} - {self.user}"
 
-#Quiz Generation
+#Quiz Generation and Score Table
 class TalentScore(models.Model):
     score_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)

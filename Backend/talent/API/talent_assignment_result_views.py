@@ -6,7 +6,7 @@ from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from talent.models import AssignmentResult, TalentRegistrationStatus
 from user_profile.models import UserProfile
-from talent.serializers import AssignmentResultSerializer
+from talent.serializers import TalentScoreSerializer
 import google.generativeai as genai
 import json, re, os
 
@@ -40,7 +40,7 @@ class AssignmentResultCreateView(APIView):
                         "assignment_submission": openapi.Schema(type=openapi.TYPE_STRING, description="Assignment Submission"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
-                    required=["user_id", "assignment_task","assignment_submission" ],
+                    required=["user_id", "assignment_task", "assignment_submission"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -84,20 +84,20 @@ class AssignmentResultCreateView(APIView):
         payload = request.data.get("payload", {})
 
         assignment_submission = payload.get("assignment_submission")
-        user_id = payload.get("user_id")
         assignment_task = payload.get("assignment_task")
+        user_id = payload.get("user_id")
 
         if not assignment_submission or not user_id or not assignment_task:
             return Response(
                 {"error": "User ID, Assignment Score, Assignment Task are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         user = UserProfile.objects.get(user_id=user_id)
 
         api_key = os.getenv('GEMENI_API_KEY')
-        genai.configure(api_key = api_key)
-    
+        genai.configure(api_key=api_key)
+
         prompt = f'''
             Evaluate the provided task submission from the given GitHub link based on the specified skills. The evaluation should be **objective, structured, and provide a score from 1 to 10**, reflecting the quality and completeness of the submission.  
 
@@ -116,38 +116,53 @@ class AssignmentResultCreateView(APIView):
             **Response Format (JSON):**  
             ```json
             {{
-            "score": "String (1 to 10)"
+              "score": "String (1 to 10)"
             }}
-            ```
+            ```  
+            Where the score is a number between 1 and 10. Do not return any extra text, comments, or formatting. The response should be a JSON object with the score only.
         '''
 
-        
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
-        
+
         response_content = response.text if hasattr(response, 'text') else str(response)
-        
         json_match = re.search(r'(\{.*\}|\[.*\])', response_content, re.DOTALL)
-        
+
         if json_match:
-            json_text = json_match.group(0) 
+            json_text = json_match.group(0)
             parsed_response = json.loads(json_text)
-            # formatted_response = format_response_for_readability(parsed_response)
-            # return formatted_response
+        else:
+            return Response({"error": "Could not extract score from response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         score = parsed_response["score"]
-        print(score)
+        print("Evaluated Score:", score)
+
+        # Save score in the AssignmentResult model
         assignment_model, _ = AssignmentResult.objects.get_or_create(user_id=user_id)
         assignment_model.assignment_score = score
         assignment_model.assignment_submission = assignment_submission
         assignment_model.save()
 
-        # Update Talent Registration Status
-        talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-        talent_status.status_id = "10"
-        talent_status.save()
+        # Serialize using the score from Gemini, not from payload
+        serializer = TalentScoreSerializer(
+            data={
+                "assignment_score": score,
+                "user_id": user.user_id,
+            }
+        )
+
+        if serializer.is_valid():
+            assignment_result = serializer.save()
+
+            # Update Talent Registration Status
+            talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
+            talent_status.status_id = "10"
+            talent_status.save()
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         user_data = {
-            "assignment_score": score,
+            "assignment_score": assignment_result.assignment_score,
         }
 
         return Response(

@@ -130,7 +130,7 @@ class InterviewAnswersSaveView(APIView):
             )
 
         try:
-            user = UserProfile.objects.get(id=user_id)
+            user = UserProfile.objects.get(user_id=user_id)
         except UserProfile.DoesNotExist:
             return Response(
                 {"error": "User not found", "status": 404},
@@ -166,6 +166,7 @@ class InterviewAnswersSaveView(APIView):
             )
             response.raise_for_status()
             response_data = response.json()
+            print(response_data)
             raw = response_data["choices"][0]["message"]["content"]
             evaluation = json.loads(raw)
             if not isinstance(evaluation, dict) or "feedback" not in evaluation or "score" not in evaluation:
