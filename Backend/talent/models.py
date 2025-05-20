@@ -136,23 +136,6 @@ class LanguageProficiency(models.Model):
     
 #Job Preference
 class JobPreferences(models.Model):
-    JOB_TYPE_CHOICES = [
-        ('full_time', 'Full-Time'),
-        ('part_time', 'Part-Time'),
-        ('contract', 'Contract'),
-        ('freelance', 'Freelance'),
-        ('internship', 'Internship'),
-    ]
-
-    INDUSTRY_CHOICES = [
-        ('it_software', 'IT & Software'),
-        ('finance', 'Finance'),
-        ('healthcare', 'Healthcare'),
-        ('education', 'Education'),
-        ('marketing', 'Marketing'),
-        ('other', 'Other'),
-    ]
-
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
     job_title = models.CharField(max_length=100, null=False)
     preferred_job_type = models.CharField(max_length=20,null=False)
@@ -163,7 +146,7 @@ class JobPreferences(models.Model):
     def __str__(self):
         return f"{self.job_title} - {self.user}"
 
-#Quiz Generation
+#Quiz Generation and Score Table
 class TalentScore(models.Model):
     score_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -197,3 +180,23 @@ class InterviewResult(models.Model):
 
     def __str__(self):
         return self.interview_id
+    
+class InterviewQuestion(models.Model):
+    interview_questions_id = models.AutoField(primary_key=True)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='interview_questions')
+    questions = models.JSONField(default=list, help_text="List of 10 interview questions in JSON format")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when questions were generated")
+
+    def __str__(self):
+        return str(self.interview_questions_id)
+    
+
+class InterviewAnswer(models.Model):
+    interview_answer_id = models.AutoField(primary_key=True)
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='interview_answers')
+    question_answers = models.JSONField(default=list, help_text="List of question-answer pairs with evaluation in JSON format")
+    score = models.FloatField(null=True, blank=True, help_text="Evaluation score out of 100")
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when answers were submitted")
+
+    def __str__(self):
+        return f"Interview Answers for User {self.user_id} (ID: {self.interview_answer_id}, Score: {self.score})"
