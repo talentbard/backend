@@ -107,10 +107,9 @@ class PortfolioReferencesCreateView(APIView):
                 try:
                     portfolio = serializer.save()
                     try:
-                        TalentRegistrationStatus.objects.update_or_create(
-                            user_id=user,  # Pass UserProfile instance
-                            defaults={"talent_status": "5"}
-                        )
+                        talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
+                        talent_status.status_id = "5"
+                        talent_status.save()
                     except Exception as e:
                         return Response({"error": f"Failed to update talent status: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
