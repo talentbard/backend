@@ -10,11 +10,11 @@ from django.contrib.auth.hashers import make_password, check_password
 from talent.models import JobPreferences
 from talent.serializers import JobPreferencesSerializer
 from user_profile.models import UserProfile
-from talent.models import Education,TalentRegistrationStatus
+from talent.models import Education, TalentRegistrationStatus
 from talent.serializers import EducationSerializer
 
 HEADER_PARAMS = {
-    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.IN_HEADER),
+    'access_token': openapi.Parameter('accesstoken', openapi.IN_HEADER, description="local header param", type=openapi.TYPE_STRING),
 }
 
 class JobPreferencesCreateView(APIView):
@@ -39,13 +39,15 @@ class JobPreferencesCreateView(APIView):
                     description="User job preferences details",
                     properties={
                         "job_title": openapi.Schema(type=openapi.TYPE_STRING, description="Job Title"),
-                        "preferred_job_type": openapi.Schema(type=openapi.TYPE_STRING, description="Preferred Job Type"),
                         "industry": openapi.Schema(type=openapi.TYPE_STRING, description="Industry"),
-                        "desired_role": openapi.Schema(type=openapi.TYPE_STRING, description="Desired Role"),
-                        "career_objective": openapi.Schema(type=openapi.TYPE_STRING, description="Career Objective"),
+                        "frameworks": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            description="List of frameworks",
+                            items=openapi.Schema(type=openapi.TYPE_STRING)
+                        ),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
-                    required=["job_title", "preferred_job_type", "industry", "user_id"],
+                    required=["job_title", "industry", "user_id"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -57,10 +59,12 @@ class JobPreferencesCreateView(APIView):
                     type=openapi.TYPE_OBJECT,
                     properties={
                         "job_title": openapi.Schema(type=openapi.TYPE_STRING, description="Job Title"),
-                        "preferred_job_type": openapi.Schema(type=openapi.TYPE_STRING, description="Preferred Job Type"),
                         "industry": openapi.Schema(type=openapi.TYPE_STRING, description="Industry"),
-                        "desired_role": openapi.Schema(type=openapi.TYPE_STRING, description="Desired Role"),
-                        "career_objective": openapi.Schema(type=openapi.TYPE_STRING, description="Career Objective"),
+                        "frameworks": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            description="List of frameworks",
+                            items=openapi.Schema(type=openapi.TYPE_STRING)
+                        ),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
                 ),
@@ -98,32 +102,34 @@ class JobPreferencesCreateView(APIView):
     def post(self, request):
         payload = request.data.get('payload', {})
         job_title = payload.get('job_title')
-        preferred_job_type = payload.get('preferred_job_type')
         industry = payload.get('industry')
-        desired_role = payload.get('desired_role')
-        career_objective = payload.get('career_objective')
+        frameworks = payload.get('frameworks', [])
         user_id = payload.get('user_id')
 
-        if not job_title or not preferred_job_type or not industry:
+        if not job_title or not industry:
             return Response(
-                {"error": "Job title, preferred job type, and industry are required in the payload."},
+                {"error": "Job title and industry are required in the payload."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        user = UserProfile.objects.get(user_id=user_id)
+
+        try:
+            user = UserProfile.objects.get(user_id=user_id)
+        except UserProfile.DoesNotExist:
+            return Response(
+                {"error": "User not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         serializer = JobPreferencesSerializer(
             data={
                 "job_title": job_title,
-                "preferred_job_type": preferred_job_type,
                 "industry": industry,
-                "desired_role": desired_role,
-                "career_objective": career_objective,
+                "frameworks": frameworks,
                 "user_id": user.user_id,
             }
         )
         if serializer.is_valid():
             job_preference = serializer.save()
-            user = serializer.save()
             # Retrieve the object by user_id
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
             # Update talent_status
@@ -132,10 +138,9 @@ class JobPreferencesCreateView(APIView):
             talent_status.save()
             user_data = {
                 "job_title": job_preference.job_title,
-                "preferred_job_type": job_preference.preferred_job_type,
                 "industry": job_preference.industry,
-                "desired_role": job_preference.desired_role,
-                "career_objective": job_preference.career_objective,
+                "frameworks": job_preference.frameworks,
+                "user_id": user.user_id,
             }
 
             return Response(
