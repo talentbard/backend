@@ -128,8 +128,8 @@ class PreferredWorkTermsCreateView(APIView):
 
         if serializer.is_valid():
             work_terms = serializer.save()
-            talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "6"
+            talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
+            talent_status.status_id = "5"
             talent_status.save()
             user_data = {
                 "work_type": work_terms.work_type,
