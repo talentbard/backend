@@ -140,8 +140,9 @@ class InterviewQuestionsView(APIView):
             # Fetch job preferences
             try:
                 job_prefs = JobPreferences.objects.get(user_id=user)
-                domain = job_prefs.industry
-                framework = job_prefs.desired_role or job_prefs.job_title
+                job_title = job_prefs.job_title
+                industry = job_prefs.industry
+                framework = job_prefs.frameworks or []
             except JobPreferences.DoesNotExist:
                 return Response(
                     {"error": "Job preferences not found for user", "status": 404},
@@ -158,7 +159,7 @@ class InterviewQuestionsView(APIView):
                 pass
 
             # Build prompt for Groq API
-            prompt = build_combined_prompt(domain, framework, details)
+            prompt = build_combined_prompt(industry, framework, details, job_title)
 
             # Call Groq API
             try:
@@ -221,19 +222,21 @@ class InterviewQuestionsView(APIView):
 # ────────────────────────────────────────────────────────────
 #  Prompt builder for combined 5+5 questions
 # ────────────────────────────────────────────────────────────
-def build_combined_prompt(domain: str, framework: str, details: str) -> str:
+def build_combined_prompt(industry: str, framework: list, details: str, job_title: str) -> str:
     """
     Constructs a prompt that asks for:
-      - Questions 1–5: Intermediate-to-advanced on the domain/framework.
+      - Questions 1–5: Intermediate-to-advanced on the job_title, industry, frameworks.
       - Questions 6–10: Based on project details from the resume text.
     Each question must increase in difficulty, with at least two follow-ups building on the previous question.
     Return only a JSON array of exactly 10 question strings, no additional text.
     """
+    framework_text = ", ".join(framework) if framework else "general tools"
+    
     return (
         "You are a senior technical interviewer.\n"
         "Generate a JSON array of exactly 10 interview questions following these rules:\n"
-        "1. Questions 1-5: Intermediate-to-advanced questions about '" + domain + "' using '" + framework + "'.\n"
-        "2. Questions 6-10: Progressive questions based on the resume details below:\n" + details + "\n"
+        f"1. Questions 1-5: Intermediate-to-advanced questions about '{industry}' using '{framework_text}' and job title '{job_title}'.\n"
+        f"2. Questions 6-10: Progressive questions based on the resume details below:\n{details}\n"
         "Each question should increase in difficulty, and at least two questions must follow up directly on the previous question.\n"
         "Return only the JSON array of 10 strings, without any commentary."
     )

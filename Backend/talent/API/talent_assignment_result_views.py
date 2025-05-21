@@ -36,11 +36,11 @@ class AssignmentResultCreateView(APIView):
                     type=openapi.TYPE_OBJECT,
                     description="Assignment details",
                     properties={
-                        "assignment_task": openapi.Schema(type=openapi.TYPE_STRING, description="Assignment Task"),
+                        "assignment_task_title": openapi.Schema(type=openapi.TYPE_STRING, description="Assignment Task Title"),
                         "assignment_submission": openapi.Schema(type=openapi.TYPE_STRING, description="Assignment Submission"),
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
                     },
-                    required=["user_id", "assignment_task", "assignment_submission"],
+                    required=["user_id", "assignment_task_title", "assignment_submission"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -84,12 +84,19 @@ class AssignmentResultCreateView(APIView):
         payload = request.data.get("payload", {})
 
         assignment_submission = payload.get("assignment_submission")
-        assignment_task = payload.get("assignment_task")
+        assignment_task_title = payload.get("assignment_task_title")
         user_id = payload.get("user_id")
 
-        if not assignment_submission or not user_id or not assignment_task:
+        if not assignment_submission or not user_id or not assignment_task_title:
             return Response(
-                {"error": "User ID, Assignment Score, Assignment Task are required."},
+                {"error": "User ID, Assignment Submission, Assignment Task Title are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Validate GitHub link (basic check)
+        if not assignment_submission.startswith("https://github.com/"):
+            return Response(
+                {"error": "Invalid GitHub link provided"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -99,18 +106,23 @@ class AssignmentResultCreateView(APIView):
         genai.configure(api_key=api_key)
 
         prompt = f'''
-            Evaluate the provided task submission from the given GitHub link based on the specified skills. The evaluation should be **objective, structured, and provide a score from 1 to 10**, reflecting the quality and completeness of the submission.  
+            Evaluate the provided assignment submission from the given GitHub link based on the assignment task title. The evaluation should be **objective, structured, and comprehensive**, providing a single overall score from 1 to 10 that reflects the freelancer’s technical skills, creativity, and thought process. Infer the task requirements from the title and evaluate the submission accordingly.
 
-            **Evaluation Criteria:**  
-            - **Relevance to the Given Skills**: Does the solution effectively demonstrate expertise in the specified skills?  
-            - **Code Quality & Best Practices**: Is the code well-structured, readable, and maintainable? Are best practices followed?  
-            - **Functionality & Correctness**: Does the submission fully meet the requirements and function correctly?  
-            - **Efficiency & Optimization**: Is the solution optimized for performance and scalability (if applicable)?  
-            - **Documentation & Readability**: Are there sufficient comments, a README, and necessary explanations?  
-            - **Completeness**: Does the submission meet all expected deliverables?  
+            **Evaluation Requirements:**
+            - Infer the task’s requirements and context from the assignment title (e.g., technologies, scope, or domain).
+            - Assess the submission based on the following general criteria:
+              - **Relevance**: Does the submission align with the inferred task requirements?
+              - **Functionality**: Does the solution work as intended for the inferred task?
+              - **Code Quality**: Is the code well-structured, readable, and maintainable? Are best practices followed?
+              - **Creativity**: Does the solution demonstrate innovative or thoughtful approaches?
+              - **Thought Process**: Is there a clear, documented thought process (e.g., rationale, design decisions)?
+              - **Completeness**: Does the submission appear complete for the inferred task?
+            - Provide a single **overall score** (1-10) based on a balanced assessment of all criteria.
+            - If the GitHub link is inaccessible or invalid, return an error message instead of a score.
+            - Use a professional tone and avoid subjective bias.  
             Please do give me the accurate rating in the scale of 1 to 10.
 
-            **Assignment Task:** {assignment_task}  
+            **Assignment Task Title:** {assignment_task_title}  
             **GitHub Link:** {assignment_submission}  
 
             **Response Format (JSON):**  

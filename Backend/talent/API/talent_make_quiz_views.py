@@ -4,7 +4,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
-from talent.models import SkillsExpertise
+from talent.models import JobPreferences
 from user_profile.models import UserProfile
 import google.generativeai as genai
 import json, re,os
@@ -76,72 +76,77 @@ class TalentMakeQuizView(APIView):
             ),
         },
     )
+
     @authenticate_user_session
     def post(self, request):
         payload = request.data.get("payload", {})
         user_id = payload.get("user_id")
         api_key = os.getenv('GEMENI_API_KEY')
 
+        if not user_id:
+            return Response({"message": "User ID is required", "status": 400}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            skills_expertise = SkillsExpertise.objects.get(user_id=user_id)
-        except SkillsExpertise.DoesNotExist:
-            return Response({"message": "User skills not found", "status": 404}, status=status.HTTP_404_NOT_FOUND)
+            job_preference = JobPreferences.objects.get(user_id=user_id)
+        except JobPreferences.DoesNotExist:
+            return Response({"message": "User Job Preferences not found", "status": 404}, status=status.HTTP_404_NOT_FOUND)
         
-        primary_skills = skills_expertise.primary_skills
-        secondary_skills = skills_expertise.secondary_skills or []
-        primary_skills = str(primary_skills)
-        secondary_skills = str(secondary_skills)
+        job_title = job_preference.job_title or "Not specified"
+        industry = job_preference.industry or "Not specified"
+        frameworks = job_preference.frameworks or []
 
-        # Prepare API prompt
-        skill_text = f"Primary skills: {', '.join(primary_skills)}. Secondary skills: {', '.join(secondary_skills)}."
+        # Validate and format inputs
+        job_title = str(job_title).strip()
+        industry = str(industry).strip()
+        frameworks = [str(f).strip() for f in frameworks] if frameworks else ["None"]
 
-        genai.configure(api_key = api_key)
+        # Prepare job context
+        job_text = f"Job Title: {job_title}. Industry: {industry}. Frameworks: {', '.join(frameworks) or 'None'}"
+
+        genai.configure(api_key=api_key)
     
         prompt = f"""
-                Generate 10 professional multiple-choice questions based on the following skills. These questions are designed to evaluate freelancers' technical knowledge effectively. 
+            Generate 10 professional multiple-choice questions to evaluate a freelancer's technical and domain-specific knowledge based on their job preferences. The questions should assess the freelancer's expertise level (beginner, intermediate, advanced) in the specified job title, industry, and frameworks.
 
-                **Requirements:**  
-                - Each question should be solvable within 10 minutes.  
-                - Questions should strictly assess knowledge of the mentioned skills without requiring additional HTML formatting.  
-                - Maintain a professional tone and focus purely on the technical aspects of the skills provided.  
-                - The difficulty level should align with the freelancer's skill level:
-                - **Beginner** → Easy  
-                - **Intermediate** → Medium  
-                - **Advanced/Expert** → Hard  
-                - Each question should have 4 answer options, with one correct answer.  
+            **Requirements:**
+            - Generate 3 beginner-level, 4 intermediate-level, and 3 advanced-level questions to comprehensively assess knowledge depth.
+            - Each question should be directly relevant to the job title, industry, and frameworks provided, reflecting real-world tasks or scenarios.
+            - Questions must be solvable within 15 minutes and have a clear, unambiguous correct answer.
+            - Use a professional tone, avoiding fluff or irrelevant content even try to avoid html.
+            - Provide 4 answer options per question, with exactly one correct answer. Distractors should reflect common misconceptions or errors.
+            - If frameworks are 'None', focus on general knowledge for the job title and industry.
 
-                **Skills:** {skill_text}  
+            **Job Preferences:** {job_text}
 
-                **Response Format (JSON):**  
-                ```json
-                [
+            **Response Format (JSON):**
+            ```json
+            [
                 {{
                     "question_no": 1,
-                    "question": "Your first question here",
+                    "difficulty": "beginner",
+                    "question": "Sample question here",
                     "option_1": "Option A",
                     "option_2": "Option B",
                     "option_3": "Option C",
                     "option_4": "Option D",
-                    "correct_option": "Option X"
-                }},
+                    "correct_option": "Option A",                }},
                 ...
-                ]"""
+            ]
+            ```
+        """
         
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
         
         response_content = response.text if hasattr(response, 'text') else str(response)
-        
         json_match = re.search(r'(\{.*\}|\[.*\])', response_content, re.DOTALL)
         
         if json_match:
             json_text = json_match.group(0) 
             parsed_response = json.loads(json_text)
-            # formatted_response = format_response_for_readability(parsed_response)
-            # return formatted_response
-        print(parsed_response)
+        
         return Response({
-        "message": "Questions generated successfully",
-        "payload": parsed_response,
-        "status": 200
+            "message": "Questions generated successfully",
+            "payload": parsed_response,
+            "status": 200
         }, status=status.HTTP_200_OK)
