@@ -17,6 +17,7 @@ from .API.talent_profile_views import ProfileCreateView
 from .API.interview_get_questions_view import InterviewQuestionsRetrieveView
 from .API.interview_questions_view import InterviewQuestionsView
 from .API.interview_evaluation_view import InterviewAnswersSaveView
+from .API.talent_fetch_assignment_views import TalentFetchAssignmentView
 
 
 
@@ -38,5 +39,6 @@ urlpatterns = [
     path('talent_profile_views/', ProfileCreateView.as_view(), name='talent_profile_views'),
     path('interview_questions_generate/', InterviewQuestionsView.as_view(), name='interview_questions_view'),
     path('interview_get_questions_view/', InterviewQuestionsRetrieveView.as_view(), name='interview_get_questions_view'),
-    path('interview_evaluation_view/', InterviewAnswersSaveView.as_view(), name='interview_evaluation_view')
+    path('interview_evaluation_view/', InterviewAnswersSaveView.as_view(), name='interview_evaluation_view'),
+    path('talent_fetch_assignment_views/', TalentFetchAssignmentView.as_view(), name='talent_fetch_assignment_views')
 ]

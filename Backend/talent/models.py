@@ -203,3 +203,13 @@ class InterviewAnswer(models.Model):
 
     def __str__(self):
         return f"Interview Answers for User {self.user_id} (ID: {self.interview_answer_id}, Score: {self.score})"
+    
+    
+class GeneratedAssignment(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='assignments')
+    assignment_task = models.JSONField()  # Stores the JSON response from Gemini
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user'] 

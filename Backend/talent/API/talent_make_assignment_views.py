@@ -6,11 +6,12 @@ from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
 from talent.models import JobPreferences
 from user_profile.models import UserProfile
+from talent.models import GeneratedAssignment
+from talent.serializers import AssignmentResultSerializer
 import google.generativeai as genai
 import json
 import re
 import os
-from talent.serializers import AssignmentResultSerializer
 
 HEADER_PARAMS = {
     'access_token': openapi.Parameter(
@@ -20,7 +21,7 @@ HEADER_PARAMS = {
 
 class TalentMakeAssignmentView(APIView):
     @swagger_auto_schema(
-        operation_description="Generate a practical assignment based on user's job preferences to evaluate thought process and creativity.",
+        operation_description="Generate or retrieve a practical assignment based on user's job preferences to evaluate thought process and creativity.",
         manual_parameters=[HEADER_PARAMS['access_token']],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -46,13 +47,13 @@ class TalentMakeAssignmentView(APIView):
             required=["payload", "auth_params"],
         ),
         responses={
-            201: openapi.Response(
+            200: openapi.Response(
                 "Success",
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
                         "status": openapi.Schema(type=openapi.TYPE_STRING, description="Status message"),
-                        "payload": openapi.Schema(type=openapi.TYPE_OBJECT, description="Generated assignment"),
+                        "payload": openapi.Schema(type=openapi.TYPE_OBJECT, description="Generated or retrieved assignment"),
                     },
                 ),
             ),
@@ -96,6 +97,22 @@ class TalentMakeAssignmentView(APIView):
             return Response({"message": "User ID is required", "status": 400}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            user = UserProfile.objects.get(user_id=user_id)
+        except UserProfile.DoesNotExist:
+            return Response({"message": "User profile not found", "status": 404}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if assignment already exists
+        try:
+            existing_assignment = GeneratedAssignment.objects.get(user=user)
+            return Response({
+                "message": "Assignment retrieved successfully",
+                "payload": existing_assignment.assignment_task,
+                "status": 200
+            }, status=status.HTTP_200_OK)
+        except GeneratedAssignment.DoesNotExist:
+            pass
+
+        try:
             job_preference = JobPreferences.objects.get(user_id=user_id)
         except JobPreferences.DoesNotExist:
             return Response({"message": "User Job Preferences not found", "status": 404}, status=status.HTTP_404_NOT_FOUND)
@@ -104,12 +121,10 @@ class TalentMakeAssignmentView(APIView):
         industry = job_preference.industry or "Not specified"
         frameworks = job_preference.frameworks or []
 
-        # Clean and format fields
         job_title = str(job_title).strip()
         industry = str(industry).strip()
         frameworks = [str(f).strip() for f in frameworks] if frameworks else ["None"]
 
-        # Compose context
         job_context = f"Job Title: {job_title}. Industry: {industry}. Frameworks: {', '.join(frameworks)}"
 
         genai.configure(api_key=api_key)
@@ -153,7 +168,6 @@ class TalentMakeAssignmentView(APIView):
             response = model.generate_content(prompt)
             response_content = response.text if hasattr(response, 'text') else str(response)
 
-            # Extract JSON from response
             json_match = re.search(r'\{.*\}', response_content, re.DOTALL)
             if not json_match:
                 return Response({"message": "Failed to parse JSON response", "status": 500}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -161,41 +175,18 @@ class TalentMakeAssignmentView(APIView):
             json_text = json_match.group(0)
             parsed_response = json.loads(json_text)
 
-            # Validate response structure
             required_keys = ["task_title", "task_description", "expected_deliverables", "difficulty_level", "evaluation_criteria"]
             if not isinstance(parsed_response, dict) or not all(key in parsed_response for key in required_keys):
                 return Response({"message": "Invalid response format from AI model", "status": 500}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # Validate user profile
-            try:
-                user = UserProfile.objects.get(user_id=user_id)
-            except UserProfile.DoesNotExist:
-                return Response({"message": "User profile not found", "status": 404}, status=status.HTTP_404_NOT_FOUND)
-
-            # Save assignment
-            serializer = AssignmentResultSerializer(
-                data={
-                    "user_id": user.user_id,
-                    "assignment_task": json.dumps(parsed_response)
-                }
+            # Save assignment to GeneratedAssignment
+            GeneratedAssignment.objects.create(
+                user=user,
+                assignment_task=parsed_response
             )
 
-            if serializer.is_valid():
-                try:
-                    serializer.save()
-                except Exception as e:
-                    return Response(
-                        {"error": f"Error saving assignment: {str(e)}"},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
-            else:
-                return Response(
-                    {"errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
             return Response({
-                "message": "Task generated successfully",
+                "message": "Assignment generated successfully",
                 "payload": parsed_response,
                 "status": 200
             }, status=status.HTTP_200_OK)
