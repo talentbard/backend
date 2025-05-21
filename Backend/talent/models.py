@@ -138,13 +138,16 @@ class LanguageProficiency(models.Model):
 class JobPreferences(models.Model):
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
     job_title = models.CharField(max_length=100, null=False)
-    preferred_job_type = models.CharField(max_length=20,null=False)
     industry = models.CharField(max_length=50, null=False)
-    desired_role = models.CharField(max_length=100, null=True, blank=True)
-    career_objective = models.TextField(null=True, blank=True)
+    frameworks = ArrayField(
+        models.CharField(max_length=50, null=False),
+        null=True,
+        blank=True,
+        default=list
+    )
 
     def __str__(self):
-        return f"{self.job_title} - {self.user}"
+        return f"{self.job_title} - {self.industry}"
 
 #Quiz Generation and Score Table
 class TalentScore(models.Model):
