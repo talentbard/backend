@@ -161,20 +161,31 @@ class InterviewQuestionsView(APIView):
             # Build prompt for Groq API
             prompt = build_combined_prompt(industry, framework, details, job_title)
 
+            # Debug: Log the GROQ_API_KEY
+            groq_api_key = os.getenv('GROQ_API_KEY')
+            print(f"GROQ_API_KEY: {'Set' if groq_api_key else 'Not set'}")
+
+            if not groq_api_key:
+                return Response(
+                    {"error": "GROQ_API_KEY is not configured in the server environment", "status": 500},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
             # Call Groq API
             try:
+                print("Calling Groq API...")
                 response = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {os.getenv('GROQ_API_KEY')}"},
+                    headers={"Authorization": f"Bearer {groq_api_key}"},
                     json={
-                        "model": "llama3-8b-8192",
+                        "model": "llama-3.3-70b-versatile",
                         "messages": [{"role": "user", "content": prompt}],
                         "temperature": 0.3,
                     },
                 )
                 response.raise_for_status()
                 response_data = response.json()
-                print(response_data)
+                print("Groq API response:", response_data)
                 raw = response_data["choices"][0]["message"]["content"]
                 match = re.search(r"\[.*\]", raw, re.DOTALL)
                 if not match:
@@ -183,6 +194,7 @@ class InterviewQuestionsView(APIView):
                 if not isinstance(questions, list) or len(questions) != 10:
                     raise ValueError("Response must be a JSON array of 10 questions")
             except (requests.RequestException, ValueError, KeyError) as e:
+                print(f"Groq API error: {str(e)}")
                 return Response(
                     {"error": f"Failed to generate questions: {str(e)}", "status": 500},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
