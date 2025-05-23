@@ -145,14 +145,12 @@ class JobPreferences(models.Model):
         blank=True,
         default=list
     )
-
     def __str__(self):
         return f"{self.job_title} - {self.industry}"
 
 #Quiz Generation and Score Table
 class TalentScore(models.Model):
-    score_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, on_delete=models.CASCADE, primary_key=True)
     quiz_score = models.IntegerField(null=True,blank=True)
     assignment_score = models.IntegerField(null=True,blank=True)
     interview_score = models.IntegerField(null=True,blank=True)
@@ -160,8 +158,8 @@ class TalentScore(models.Model):
     grade = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return self.score_id
-    
+        return f"TalentScore for {self.user_id} — Quiz: {self.quiz_score}, Assignment: {self.assignment_score}, Interview: {self.interview_score}"
+
 #Assignment Generation
 class AssignmentResult(models.Model):
     assignment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -171,8 +169,8 @@ class AssignmentResult(models.Model):
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.assignment_id
-    
+        return f"Assignment {self.assignment_id} for {self.user_id}"
+
 # Interview Scheduling
 class InterviewResult(models.Model):
     interview_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -182,7 +180,9 @@ class InterviewResult(models.Model):
     user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.interview_id
+        status = "Completed" if self.interview_done else "Pending"
+        return f"InterviewResult [{status}] for {self.user_id} — Score: {self.interview_score}"
+
     
 class InterviewQuestion(models.Model):
     interview_questions_id = models.AutoField(primary_key=True)
@@ -191,7 +191,7 @@ class InterviewQuestion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when questions were generated")
 
     def __str__(self):
-        return str(self.interview_questions_id)
+        return f"InterviewQuestions #{self.interview_questions_id} for {self.user_id} on {self.created_at.strftime('%Y-%m-%d')}"
     
 
 class InterviewAnswer(models.Model):
@@ -200,6 +200,7 @@ class InterviewAnswer(models.Model):
     question_answers = models.JSONField(default=list, help_text="List of question-answer pairs with evaluation in JSON format")
     score = models.FloatField(null=True, blank=True, help_text="Evaluation score out of 100")
     created_at = models.DateTimeField(auto_now_add=True, help_text="Timestamp when answers were submitted")
+    cheating_suspected = models.BooleanField(default=False, help_text="Flag to indicate if cheating is suspected")
 
     def __str__(self):
         return f"Interview Answers for User {self.user_id} (ID: {self.interview_answer_id}, Score: {self.score})"
