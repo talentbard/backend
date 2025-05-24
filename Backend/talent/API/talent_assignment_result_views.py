@@ -4,9 +4,8 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from user_profile.decorators import authenticate_user_session
-from talent.models import AssignmentResult, TalentRegistrationStatus, GeneratedAssignment
+from talent.models import AssignmentResult, TalentRegistrationStatus, GeneratedAssignment, TalentScore
 from user_profile.models import UserProfile
-from talent.serializers import TalentScoreSerializer
 import google.generativeai as genai
 import json, re, os
 
@@ -104,7 +103,7 @@ class AssignmentResultCreateView(APIView):
                 {"error": "User ID, Assignment Submission, Assignment Task are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         if not assignment_submission.startswith("https://github.com/"):
             return Response(
                 {"error": "Invalid GitHub link provided"},
@@ -177,29 +176,31 @@ class AssignmentResultCreateView(APIView):
             else:
                 return Response({"error": "Could not extract score from response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            score = parsed_response["score"]
+            score = int(parsed_response["score"])
             print("Evaluated Score:", score)
 
-            assignment_model, _ = AssignmentResult.objects.get_or_create(user_id=user_id)
+            # Save assignment score in AssignmentResult
+            assignment_model, _ = AssignmentResult.objects.get_or_create(user_id=user)
             assignment_model.assignment_score = score
             assignment_model.assignment_submission = assignment_submission
             assignment_model.save()
 
-            serializer = TalentScoreSerializer(
-                data={
-                    "assignment_score": score,
-                    "user_id": user.user_id,
-                }
-            )
+            # Update assignment_score in TalentScore (do not overwrite other fields)
+            try:
+                talent_score, _ = TalentScore.objects.get_or_create(user_id=user)
+                talent_score.assignment_score = score
+                talent_score.save()
+                assignment_result = talent_score
+            except Exception as e:
+                return Response(
+                    {"error": f"Error updating TalentScore: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
-            if serializer.is_valid():
-                assignment_result = serializer.save()
-
-                talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
-                talent_status.status_id = "10"
-                talent_status.save()
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Update status to step 10
+            talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
+            talent_status.status_id = "10"
+            talent_status.save()
 
             user_data = {
                 "assignment_score": assignment_result.assignment_score,

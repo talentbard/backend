@@ -131,7 +131,7 @@ class EducationCreateView(APIView):
             # Retrieve the object by user_id
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
             # Update talent_status
-            talent_status.talent_status = "3"
+            talent_status.status_id = "3"
             # Save the changes
             talent_status.save()
             user_data = {

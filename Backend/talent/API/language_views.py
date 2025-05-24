@@ -119,7 +119,7 @@ class LanguageProficiencyCreateView(APIView):
         if serializer.is_valid():
             user_language = serializer.save()
             talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "7"
+            talent_status.status_id = "7"
             talent_status.save()
             user_data = {
                     "language": user_language.language,

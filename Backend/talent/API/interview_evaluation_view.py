@@ -50,8 +50,9 @@ class InterviewAnswersSaveView(APIView):
                             ),
                             description="List of question-answer pairs",
                         ),
+                        "cheating_suspected": openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Flag indicating if cheating is suspected"),
                     },
-                    required=["user_id", "answers"],
+                    required=["user_id", "answers", "cheating_suspected"],
                 ),
             },
             required=["payload", "auth_params"],
@@ -196,18 +197,14 @@ class InterviewAnswersSaveView(APIView):
             )
 
         # Save interview score to TalentScore model
-        serializer = TalentScoreSerializer(
-            data={
-                "interview_score": total_score,
-                "user_id": user.user_id,
-            }
-        )
-        if serializer.is_valid():
-            talent_score = serializer.save()
-        else:
+        try:
+            talent_score, _ = TalentScore.objects.get_or_create(user_id=user)
+            talent_score.interview_score = total_score
+            talent_score.save()
+        except Exception as e:
             return Response(
-                {"error": serializer.errors, "status": 400},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": f"Error updating TalentScore: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         # Save to InterviewResult model
@@ -225,16 +222,36 @@ class InterviewAnswersSaveView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Update TalentRegistrationStatus
+        # Update TalentRegistrationStatus based on scores
         try:
-            talent_status = TalentRegistrationStatus.objects.get(user_id=user_id)
-            talent_status.talent_status = "11"
+            # Fetch or create the talent status record
+            talent_status, _ = TalentRegistrationStatus.objects.get_or_create(user_id=user_id)
+
+            # Get the full score object
+            score_obj = TalentScore.objects.get(user_id=user_id)
+
+            quiz_score = score_obj.quiz_score or 0
+            assignment_score = score_obj.assignment_score or 0
+            interview_score_val = score_obj.interview_score or 0
+
+            # Apply your logic
+            if quiz_score > 6 and assignment_score > 6 and interview_score_val > 75:
+                talent_status.status_id = "11"
+            else:
+                talent_status.status_id = "12"
+
             talent_status.save()
         except TalentRegistrationStatus.DoesNotExist:
             return Response(
                 {"error": "Talent registration status not found", "status": 404},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        except Exception as e:
+            return Response(
+                {"error": f"Error updating registration status: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 
         user_data = {
             "interview_score": interview_result.interview_score,
