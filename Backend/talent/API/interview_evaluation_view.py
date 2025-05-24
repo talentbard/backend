@@ -123,6 +123,7 @@ class InterviewAnswersSaveView(APIView):
         payload = request.data.get("payload", {})
         user_id = payload.get("user_id")
         answers = payload.get("answers", [])
+        cheating_suspected = payload.get("cheating_suspected", False)
 
         # Validate inputs
         if not user_id or not answers:
@@ -188,7 +189,8 @@ class InterviewAnswersSaveView(APIView):
             interview_answer = InterviewAnswer.objects.create(
                 user_id=user,
                 question_answers=question_answers,
-                score=total_score
+                score=total_score,
+                cheating_suspected=cheating_suspected,
             )
         except Exception as e:
             return Response(
