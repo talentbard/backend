@@ -9,7 +9,7 @@ from talent.models import InterviewAnswer, TalentRegistrationStatus, TalentScore
 from talent.serializers import InterviewResultSerializer, TalentScoreSerializer
 import requests
 import json
-import os
+import os, re
 from django.conf import settings
 
 HEADER_PARAMS = {
@@ -82,6 +82,7 @@ class InterviewAnswersSaveView(APIView):
                                 ),
                                 "score": openapi.Schema(type=openapi.TYPE_NUMBER, description="Evaluation score out of 100"),
                                 "created_at": openapi.Schema(type=openapi.TYPE_STRING, description="Creation timestamp"),
+                                "cheating_suspected": openapi.Schema(type=openapi.TYPE_BOOLEAN, description="Flag indicating if cheating is suspected"),
                             },
                         ),
                         "status": openapi.Schema(type=openapi.TYPE_INTEGER, description="Status code"),
@@ -170,6 +171,9 @@ class InterviewAnswersSaveView(APIView):
             response.raise_for_status()
             response_data = response.json()
             raw = response_data["choices"][0]["message"]["content"]
+            match = re.search(r"\[.*\]", raw, re.DOTALL)
+            if not match:
+                raise ValueError("Could not extract a JSON array from the response.")
             evaluation = json.loads(raw)
             if not isinstance(evaluation, dict) or "feedback" not in evaluation or "score" not in evaluation:
                 raise ValueError("Evaluation response must contain feedback and score")
@@ -236,11 +240,21 @@ class InterviewAnswersSaveView(APIView):
             assignment_score = score_obj.assignment_score or 0
             interview_score_val = score_obj.interview_score or 0
 
-            # Apply your logic
-            if quiz_score > 6 and assignment_score > 6 and interview_score_val > 75:
+            # Re-fetch latest interview answer to ensure we check against the stored value
+            latest_interview_answer = InterviewAnswer.objects.filter(user_id=user).order_by('-created_at').first()
+
+            if (
+                quiz_score > 6 and
+                assignment_score > 6 and
+                interview_score_val > 75 and
+                latest_interview_answer and
+                latest_interview_answer.cheating_suspected == False
+            ):
                 talent_status.status_id = "11"
             else:
                 talent_status.status_id = "12"
+
+
 
             talent_status.save()
         except TalentRegistrationStatus.DoesNotExist:
