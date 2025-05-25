@@ -1,3 +1,4 @@
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -55,7 +56,7 @@ class UserSignupView(APIView):
                     required=["full_name", "email_id", "password", "role","admin_key"],
                 ),
             },
-            required=["payload"],  # `payload` is required
+            required=["payload"],
         ),
         responses={
             201: openapi.Response(
@@ -96,7 +97,7 @@ class UserSignupView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         
-        if admin_key!="demo":
+        if admin_key != "demo":
             return Response(
                 {"error": "admin key incorrect."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -114,10 +115,10 @@ class UserSignupView(APIView):
         if serializer.is_valid():
             user = serializer.save(password=make_password(serializer.validated_data['password']))
             serializer_talent = TalentRegistrationStatusSerializer(
-            data={
-                "user_id": user.user_id
-            }
-        )
+                data={
+                    "user_id": user.user_id
+                }
+            )
             if serializer_talent.is_valid():
                 serializer_talent.save()
 
@@ -133,11 +134,20 @@ class UserSignupView(APIView):
                 {"message": "User registered successfully", "user_data": user_data},
                 status=status.HTTP_201_CREATED,
             )
+        else:
+            # Check for duplicate email error
+            if 'email_id' in serializer.errors:
+                for error in serializer.errors['email_id']:
+                    if 'already exists' in str(error).lower():
+                        return Response(
+                            {"error": "email_id already exists"},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+# Other views remain unchanged
 class UserLoginView(APIView):
+    # ... (unchanged)
     @swagger_auto_schema(
         operation_description="User login endpoint with nested request body",
         request_body=openapi.Schema(
@@ -162,7 +172,7 @@ class UserLoginView(APIView):
                     required=["email", "password"],
                 ),
             },
-            required=["payload"],  # Make `payload` required
+            required=["payload"],
         ),
         responses={
             200: openapi.Response(
@@ -213,8 +223,8 @@ class UserLoginView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class TokenRefreshView(APIView):
+    # ... (unchanged)
     @swagger_auto_schema(
         operation_description="Refresh an access token using the refresh token",
         request_body=openapi.Schema(
@@ -237,7 +247,7 @@ class TokenRefreshView(APIView):
                     required=["refresh_token"],
                 ),
             },
-            required=["payload"],  # `payload` is required
+            required=["payload"],
         ),
         responses={
             200: openapi.Response(
@@ -270,8 +280,8 @@ class TokenRefreshView(APIView):
         except Exception:
             return Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
 
-
 class UserProfileView(APIView):
+    # ... (unchanged)
     @swagger_auto_schema(
         operation_description="Retrieve the user's profile information using `auth_params`.",
         manual_parameters=[HEADER_PARAMS['access_token']],
@@ -335,9 +345,7 @@ class UserProfileView(APIView):
     )
     @authenticate_user_session
     def post(self, request):
-        # Extract the authenticated user from the request
         user = getattr(request, "user", None)
-        
 
         if not user:
             return Response(
@@ -345,7 +353,6 @@ class UserProfileView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        # Retrieve user profile
         try:
             user_profile = UserProfile.objects.get(user_id=user.user_id)
             serializer = UserProfileSerializer(user_profile)
@@ -356,17 +363,8 @@ class UserProfileView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-
-#Google login view
 class GoogleLoginSendOTP(APIView):
-    """
-    Handles Google login:
-    - Accepts Google login payload (email, google_token)
-    - Validates Google token and user
-    - Sends OTP to email
-    - Returns JWT tokens if valid
-    """
-
+    # ... (unchanged)
     @swagger_auto_schema(
         operation_description="Google login - receive email and Google token, validate, and send OTP",
         request_body=openapi.Schema(
@@ -402,7 +400,7 @@ class GoogleLoginSendOTP(APIView):
                 ),
             ),
             400: openapi.Response(
-                "Email  not provided or invalid",
+                "Email not provided or invalid",
                 openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -443,14 +441,12 @@ class GoogleLoginSendOTP(APIView):
         payload = request.data.get('payload', {})
         email = payload.get('email')
 
-        # Validate email presence
         if not email:
             return Response(
                 {"error": "Email are required in the payload."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Validate email format
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_regex, email):
             return Response(
@@ -458,11 +454,8 @@ class GoogleLoginSendOTP(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-
-        # Generate OTP
         otp = random.randint(100000, 999999)
 
-        # Delete existing OTP for email (if any)
         try:
             EmailOTP.objects.filter(email=email).delete()
         except Exception as e:
@@ -471,7 +464,6 @@ class GoogleLoginSendOTP(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # Save or update OTP in DB
         try:
             EmailOTP.objects.update_or_create(
                 email=email,
@@ -486,7 +478,6 @@ class GoogleLoginSendOTP(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # Send OTP email
         try:
             subject = "Your TalentBard OTP for Account Verification"
             message = f"""
@@ -595,16 +586,8 @@ The TalentBard Team
             "message": "OTP sent successfully to your email.",
         }, status=status.HTTP_200_OK)
 
-        
-
-#Verifying the OTP generated and sent to the email
 class VerifyOTPView(APIView):
-    """
-    Verifies the OTP sent to user's email.
-    If verified and user exists, returns tokens and user info.
-    Otherwise, instructs to proceed with registration.
-    """
-
+    # ... (unchanged)
     @swagger_auto_schema(
         operation_description="Verify OTP sent to user's email",
         request_body=openapi.Schema(
@@ -685,11 +668,10 @@ class VerifyOTPView(APIView):
             if otp_record.otp != str(otp):
                 return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check expiry if needed
             if timezone.now() > otp_record.created_at + timedelta(minutes=5):
                 return Response({"error": "OTP expired."}, status=status.HTTP_400_BAD_REQUEST)
 
-            otp_record.delete()  # OTP used, delete it
+            otp_record.delete()
 
             return Response({
                 "message": "OTP Verified Successfully."
