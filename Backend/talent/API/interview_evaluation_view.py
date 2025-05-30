@@ -244,9 +244,9 @@ class InterviewAnswersSaveView(APIView):
             latest_interview_answer = InterviewAnswer.objects.filter(user_id=user).order_by('-created_at').first()
 
             if (
-                quiz_score > 6 and
-                assignment_score > 6 and
-                interview_score_val > 75 and
+                quiz_score > 5 and
+                assignment_score > 5 and
+                interview_score_val > 50 and
                 latest_interview_answer and
                 latest_interview_answer.cheating_suspected == False
             ):

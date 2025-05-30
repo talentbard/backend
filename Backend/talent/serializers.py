@@ -12,6 +12,7 @@ from .models import (
     TalentScore,
     AssignmentResult,
     InterviewResult,
+    InterviewScheduling,
 )
 
 # Talent Registration Serializer
@@ -92,4 +93,10 @@ class AssignmentResultSerializer(serializers.ModelSerializer):
 class InterviewResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewResult
+        fields = '__all__'
+
+# Interview Decision Serializer
+class InterviewSchedulingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InterviewScheduling
         fields = '__all__'

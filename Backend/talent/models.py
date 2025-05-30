@@ -214,3 +214,22 @@ class GeneratedAssignment(models.Model):
 
     class Meta:
         unique_together = ['user'] 
+
+
+class InterviewScheduling(models.Model):
+    STATUS_CHOICES = (
+        ("scheduled", "Scheduled"),
+        ("completed", "Completed"),
+    )
+
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="scheduled", help_text="Current status of the interview" )
+    scheduled_datetime = models.DateTimeField()
+    is_selected = models.BooleanField(default=False, help_text="Indicates if the talent is selected or not")
+    remark = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+    def __str__(self):
+        return f"Interview for {self.user_id.full_name} on {self.scheduled_datetime}"
