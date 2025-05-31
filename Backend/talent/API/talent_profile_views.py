@@ -13,7 +13,8 @@ from talent.models import (
     WorkExperience,
     PortfolioReferences,
     LanguageProficiency,
-    JobPreferences
+    JobPreferences,
+    TalentRegistration,
 )
 from talent.serializers import (
     PreferredWorkTermsSerializer,
@@ -24,6 +25,7 @@ from talent.serializers import (
     PortfolioReferencesSerializer,
     LanguageProficiencySerializer,
     JobPreferencesSerializer,
+    TalentRegistrationSerializer,
 )
 
 HEADER_PARAMS = {
@@ -111,6 +113,7 @@ class ProfileCreateView(APIView):
         portfolio_qs = PortfolioReferences.objects.filter(user_id=user_id).first()
         language_qs = LanguageProficiency.objects.filter(user_id=user_id)
         job_pref_qs = JobPreferences.objects.filter(user_id=user_id)
+        talent_registration_qs = TalentRegistration.objects.filter(user_id=user_id).first()
 
         # Serialize sections
         education_data = EducationSerializer(education_qs, many=True).data
@@ -121,6 +124,7 @@ class ProfileCreateView(APIView):
         portfolio_data = PortfolioReferencesSerializer(portfolio_qs).data if portfolio_qs else {}
         language_data = LanguageProficiencySerializer(language_qs, many=True).data
         job_pref_data = JobPreferencesSerializer(job_pref_qs, many=True).data
+        talent_registration_data = TalentRegistrationSerializer(talent_registration_qs).data if talent_registration_qs else {}
 
         # Construct full profile
         profile = {
@@ -132,6 +136,7 @@ class ProfileCreateView(APIView):
             "portfolio": portfolio_data,
             "languages": language_data,
             "job_preferences": job_pref_data,
+            "talent_registration": talent_registration_data,
         }
 
         return Response(
