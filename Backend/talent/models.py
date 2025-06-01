@@ -148,6 +148,15 @@ class JobPreferences(models.Model):
     def __str__(self):
         return f"{self.job_title} - {self.industry}"
 
+# Talent Extra Information   
+class TalentExtraInfo(models.Model):
+    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+
+    def __str__(self):
+        return f"Extra Info for {self.user_id.full_name} - Bio: {self.bio[:50]}"
+
 #Quiz Generation and Score Table
 class TalentScore(models.Model):
     user_id = models.OneToOneField(UserProfile, on_delete=models.CASCADE, primary_key=True)

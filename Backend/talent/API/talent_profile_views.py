@@ -15,6 +15,7 @@ from talent.models import (
     LanguageProficiency,
     JobPreferences,
     TalentRegistration,
+    TalentExtraInfo,
 )
 from talent.serializers import (
     PreferredWorkTermsSerializer,
@@ -25,6 +26,7 @@ from talent.serializers import (
     PortfolioReferencesSerializer,
     LanguageProficiencySerializer,
     JobPreferencesSerializer,
+    TalentExtraInfoSerializer,
     TalentRegistrationSerializer,
 )
 
@@ -53,6 +55,8 @@ class ProfileCreateView(APIView):
                     description="User payload containing user ID",
                     properties={
                         "user_id": openapi.Schema(type=openapi.TYPE_STRING, description="User ID"),
+                        "bio": openapi.Schema(type=openapi.TYPE_STRING, description="User bio"),
+                        "profile_picture": openapi.Schema(type=openapi.TYPE_STRING, description="Profile picture URL"),
                     },
                     required=["user_id"],
                 ),
@@ -114,6 +118,7 @@ class ProfileCreateView(APIView):
         language_qs = LanguageProficiency.objects.filter(user_id=user_id)
         job_pref_qs = JobPreferences.objects.filter(user_id=user_id)
         talent_registration_qs = TalentRegistration.objects.filter(user_id=user_id).first()
+        talent_extra_info_qs = TalentExtraInfo.objects.filter(user_id=user_id).first()
 
         # Serialize sections
         education_data = EducationSerializer(education_qs, many=True).data
@@ -125,6 +130,7 @@ class ProfileCreateView(APIView):
         language_data = LanguageProficiencySerializer(language_qs, many=True).data
         job_pref_data = JobPreferencesSerializer(job_pref_qs, many=True).data
         talent_registration_data = TalentRegistrationSerializer(talent_registration_qs).data if talent_registration_qs else {}
+        talent_extra_info_data = TalentExtraInfoSerializer(talent_extra_info_qs, context={'request': request}).data if talent_extra_info_qs else {}
 
         # Construct full profile
         profile = {
@@ -137,6 +143,7 @@ class ProfileCreateView(APIView):
             "languages": language_data,
             "job_preferences": job_pref_data,
             "talent_registration": talent_registration_data,
+            "talent_extra_info": talent_extra_info_data,
         }
 
         return Response(

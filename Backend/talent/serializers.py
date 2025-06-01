@@ -13,6 +13,7 @@ from .models import (
     AssignmentResult,
     InterviewResult,
     InterviewScheduling,
+    TalentExtraInfo,
 )
 
 # Talent Registration Serializer
@@ -75,6 +76,14 @@ class LanguageProficiencySerializer(serializers.ModelSerializer):
 class JobPreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobPreferences
+        fields = '__all__'
+
+# Talent Extra Info Serializer
+class TalentExtraInfoSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.ImageField(use_url=True)
+    
+    class Meta:
+        model = TalentExtraInfo
         fields = '__all__'
 
 # Talent Score Serializer
