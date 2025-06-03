@@ -171,9 +171,29 @@ class InterviewAnswersSaveView(APIView):
             response.raise_for_status()
             response_data = response.json()
             raw = response_data["choices"][0]["message"]["content"]
-            match = re.search(r"\[.*\]", raw, re.DOTALL)
-            if not match:
-                raise ValueError("Could not extract a JSON array from the response.")
+            print("Raw Groq API Response:", repr(raw))  # Debug print
+
+            if not raw.strip():
+                return Response({"error": "Groq API returned empty content", "status": 500}, status=500)
+
+            try:
+                evaluation = json.loads(raw)
+            except json.JSONDecodeError:
+                # Attempt: Fix unclosed JSON object
+                if '"score":' in raw and not raw.strip().endswith('}'):
+                    raw += '}'
+
+                # Try to fix common issues: trailing commas, missing braces
+                cleaned = re.sub(r",\s*([}\]])", r"\1", raw)
+                try:
+                    evaluation = json.loads(cleaned)
+                except json.JSONDecodeError as e2:
+                    return Response(
+                        {"error": f"Failed to parse Groq API response as JSON after cleaning: {str(e2)}", "status": 500},
+                        status=500,
+                    )
+
+
             evaluation = json.loads(raw)
             if not isinstance(evaluation, dict) or "feedback" not in evaluation or "score" not in evaluation:
                 raise ValueError("Evaluation response must contain feedback and score")
@@ -289,20 +309,38 @@ class InterviewAnswersSaveView(APIView):
         )
 
 def build_evaluation_prompt(question_answers):
-    """
-    Constructs a prompt to evaluate answers and return feedback and a score.
-    """
     qa_text = "\n".join(
         f"Question {i+1}: {qa['question']}\nAnswer: {qa['answer']}"
         for i, qa in enumerate(question_answers)
     )
     return (
-        "You are a senior technical interviewer. Evaluate the following question-answer pairs and provide:\n"
-        "1. Feedback for each answer, highlighting strengths and areas for improvement.\n"
-        "2. An overall score out of 100 based on accuracy, completeness, and relevance.\n"
-        "Return a JSON object with:\n"
-        "- 'feedback': Array of objects with 'question' and 'feedback' fields.\n"
-        "- 'score': Overall score (0-100).\n"
-        f"Question-Answer Pairs:\n{qa_text}\n"
-        "Return only the JSON object, no additional text."
+        "You are a senior technical interviewer. Evaluate the following question-answer pairs and return:\n"
+        "1. A JSON object containing:\n"
+        "- 'feedback': a list of objects with 'question' and 'feedback' keys.\n"
+        "- 'score': a number from 0 to 100.\n"
+        "Strictly return a **valid JSON object only**, with proper brackets and no extra text, explanation, or markdown.\n"
+        "**Scoring rules:**\n"
+        "- Answers that are irrelevant, too short (<10 words), or obviously wrong should score very low.\n"
+        "- At least 70% of answers must be detailed, accurate, and relevant to receive a score over 50.\n"
+        "- Use 0–10 for mostly wrong or nonsense answers.\n"
+        "- Use 11–40 for partially correct answers.\n"
+        "- Use 41–50 for decent but incomplete answers.\n"
+        "- Use 61–100 only for very good answers with strong justification.\n"
+        "- Each poor or irrelevant answer should reduce the score by 10 points.\n"
+        "- Answers like 'nothing', 'no', 'ok', 'true', 'false', or 'not ok' should result in 0 points for that answer.\n"
+        "- If 5 or more answers are poor or irrelevant, the total score must be less than 55.\n"
+        "- If 7 or more answers are poor or irrelevant, the total score must be less than 35.\n"
+        "- Only answers that are technically correct, sufficiently detailed, and relevant count as 'Good'.\n"
+        "\n"
+        "Example:\n"
+        "{\n"
+        "  \"feedback\": [\n"
+        "    {\"question\": \"Question 1\", \"feedback\": \"Too short.\"},\n"
+        "    {\"question\": \"Question 2\", \"feedback\": \"Good.\"}\n"
+        "  ],\n"
+        "  \"score\": 85\n"
+        "}\n"
+        "**DO NOT include markdown, quotes, or text before or after this object.**\n"
+        "Do not forget to close all brackets properly. Return only this object.\n"
+        f"\nEvaluate:\n{qa_text}"
     )
