@@ -67,14 +67,14 @@ class EducationCreateView(APIView):
             gpa = payload.get('gpa')
             user_id = payload.get('user_id')
 
-            # Validate required fields
+            # Step 1: Validate required fields (allow gpa=0)
             if not university_name or not college_degree or not field_of_study or gpa is None:
                 return Response(
-                    {"error": "University name, college degree, field of study, and gpa are required."},
+                    {"error": "University name, college degree, field of study and gpa are required."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Graduation date validation logic
+            # Step 2: Validate graduation_date only if not currently pursuing
             if currently_pursuing is True:
                 graduation_date = None
             else:

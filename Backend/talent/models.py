@@ -36,7 +36,7 @@ class TalentRegistration(models.Model):
     preferred_location = models.CharField(max_length=100, null=True, blank=True)
     freelancer_status = models.CharField(max_length=20, null=False, default="full_time")
     availability = models.CharField(max_length=20, null=False, default="full_time")
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
         return self.full_name
@@ -52,7 +52,7 @@ class SkillsExpertise(models.Model):
     primary_skills = models.JSONField(default=list)
     secondary_skills = models.JSONField(default=list, blank=True, null=True)  # Comma-separated skills
     certificate_images = models.JSONField(default=list, blank=True, null=True)
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.primary_skill} - {self.get_skill_level_display()}"
@@ -66,7 +66,7 @@ class Education(models.Model):
     graduation_date = models.DateField(null=True, blank=True)  # Graduation date (User Input)
     currently_pursuing = models.BooleanField(default=False)  # Checkbox for currently pursuing
     gpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)  # GPA max 9.99
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.college_degree} in {self.field_of_study} from {self.university}"
@@ -92,7 +92,7 @@ class PortfolioReferences(models.Model):
     resume = models.TextField(null=True, blank=True)
     project_links = models.JSONField(default=list, blank=True)
     references = models.JSONField(default=list, blank=True)
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Portfolio (Resume: {self.resume}, Projects: {len(self.project_links)}, References: {len(self.references)})"
@@ -111,7 +111,7 @@ class PreferredWorkTerms(models.Model):
     availability = models.CharField(max_length=100, null=True, blank=True)
     salary_expectation = models.CharField(max_length=50, null=True, blank=True)
     additional_notes = models.TextField(null=True, blank=True)
-    user_id = models.ForeignKey(UserProfile, default="1", on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, default="1", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Work Type: {self.get_work_type_display()} | Salary: {self.salary_expectation}"
@@ -136,7 +136,7 @@ class LanguageProficiency(models.Model):
     
 #Job Preference
 class JobPreferences(models.Model):
-    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)  # Link to user
+    user_id = models.OneToOneField(UserProfile, on_delete=models.CASCADE)  # Link to user
     job_title = models.CharField(max_length=100, null=False)
     industry = models.CharField(max_length=50, null=False)
     frameworks = ArrayField(
@@ -150,7 +150,7 @@ class JobPreferences(models.Model):
 
 # Talent Extra Information   
 class TalentExtraInfo(models.Model):
-    user_id = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    user_id = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 
